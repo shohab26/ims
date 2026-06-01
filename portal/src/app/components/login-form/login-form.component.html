@@ -1,0 +1,45 @@
+<div class="login-page" style="min-height:100vh; background: linear-gradient(135deg, #1a237e 0%, #283593 60%, #3949ab 100%); display:flex; align-items:center; justify-content:center;">
+  <div class="card shadow-lg" style="width:100%; max-width:400px; border-radius:12px; overflow:hidden;">
+
+    <!-- Header -->
+    <div class="card-header text-center py-4" style="background:#1a237e; border:none;">
+      <i class="fas fa-boxes fa-2x text-white mb-2"></i>
+      <h4 class="text-white mb-0 font-weight-bold">Inventory Management System</h4>
+      <small class="text-white-50">Sign in to your account</small>
+    </div>
+
+    <!-- Body -->
+    <div class="card-body p-4">
+      <form (ngSubmit)="login()">
+
+        <div class="form-group">
+          <label for="userId">User ID</label>
+          <div class="input-group">
+            <input id="userId" type="text" class="form-control" placeholder="Enter your user ID"
+              [(ngModel)]="userId" name="userId" required>
+            <div class="input-group-append">
+              <span class="input-group-text"><i class="fas fa-user"></i></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-group">
+            <input id="password" type="password" class="form-control" placeholder="Enter your password"
+              [(ngModel)]="password" name="password" required>
+            <div class="input-group-append">
+              <span class="input-group-text"><i class="fas fa-lock"></i></span>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block mt-3" style="background:#1a237e; border-color:#1a237e;">
+          <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+        </button>
+
+      </form>
+    </div>
+
+  </div>
+</div>

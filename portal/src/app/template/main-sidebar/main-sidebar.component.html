@@ -1,0 +1,109 @@
+<!-- Main Sidebar Container -->
+<aside class="main-sidebar elevation-4 custom-sidebar">
+  <!-- Brand Logo -->
+  <a routerLink="/inventory/dashboard" class="brand-link custom-brand">
+    <div class="brand-icon-wrap">
+      <i class="fas fa-cubes"></i>
+    </div>
+    <span class="brand-text">InvenTrack</span>
+  </a>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <!-- User Panel -->
+    <div class="user-panel-custom">
+      <div class="avatar-ring">
+        <img src="assets/dist/img/Admin-128.jpg" alt="User Image">
+      </div>
+      <div class="user-info">
+        <span class="user-name">Admin</span>
+        <span class="user-status"><i class="fas fa-circle"></i> Online</span>
+      </div>
+    </div>
+
+    <!-- Sidebar Menu -->
+    <nav class="mt-2">
+      <ul class="nav nav-pills nav-sidebar flex-column custom-nav" data-widget="treeview" role="menu" data-accordion="false">
+
+        <li class="nav-item">
+          <a routerLink="/inventory/dashboard" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-tachometer-alt"></i></span>
+            <p>Dashboard</p>
+          </a>
+        </li>
+
+        <li class="nav-header custom-header"><span>INVENTORY</span></li>
+
+        <li class="nav-item">
+          <a routerLink="/inventory/product" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-box"></i></span>
+            <p>Products</p>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a routerLink="/inventory/stock" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-warehouse"></i></span>
+            <p>Stocks</p>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a routerLink="/inventory/category" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-tags"></i></span>
+            <p>Categories</p>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a routerLink="/inventory/warehouse" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-building"></i></span>
+            <p>Warehouses</p>
+          </a>
+        </li>
+
+        <li class="nav-header custom-header"><span>TRANSACTIONS</span></li>
+
+        <li class="nav-item">
+          <a routerLink="/inventory/order" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-shopping-cart"></i></span>
+            <p>Purchase Orders</p>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a routerLink="/inventory/delivery" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-truck"></i></span>
+            <p>Deliveries</p>
+          </a>
+        </li>
+
+        <li class="nav-header custom-header"><span>PEOPLE</span></li>
+
+        <li class="nav-item">
+          <a routerLink="/inventory/vendor" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-industry"></i></span>
+            <p>Vendors</p>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a routerLink="/inventory/customer" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-users"></i></span>
+            <p>Customers</p>
+          </a>
+        </li>
+
+        <li class="nav-header custom-header"><span>SETTINGS</span></li>
+
+        <li class="nav-item">
+          <a routerLink="/inventory/status" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-toggle-on"></i></span>
+            <p>Status</p>
+          </a>
+        </li>
+
+      </ul>
+    </nav>
+  </div>
+</aside>

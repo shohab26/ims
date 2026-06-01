@@ -1,0 +1,124 @@
+<div class="px-3 py-3">
+    <!-- <h4 class="card-title mb-1">{{this.title}}</h4>
+    <br> -->
+    <h4 class="card-title mb-1">{{title}}</h4>
+    <br>
+    <p></p>
+    <!-- Button trigger modal -->
+    <button type="button" class="btn btn-primary py-2" (click)=" menuType=true" data-toggle="modal"
+        data-target="#exampleModal">
+        Create New
+    </button>
+    <!-- <a href="/stylecategories/addform" class="btn btn-sm btn-primary">Create New</a> -->
+
+    <div class="py-2">
+        <input type="text" class="form-control mb-2" placeholder="Search customers..." (keyup)="onSearch($any($event.target).value)">
+        <table class="table table-striped text-center">
+            <thead>
+                <tr>
+                    <th scope="col">SI</th>
+                    <th scope="col">Id</th>
+                    <th scope="col">Customer</th>
+                    <th scope="col">Phone</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Address</th>
+                    <th scope="col">Action</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let row of customer; index as i">
+                    <td>{{i+1}}</td>
+                    <td>{{row.id}}</td>
+                    <td>{{row.customer_name}}</td>
+                    <td>{{row.phone}}</td>
+                    <td>{{row.email}}</td>
+                    <td>{{row.address}}</td>
+                    <td>
+
+                        <div class="btn-group">
+                            <a class="btn" (click)="onEditById(row)" data-toggle="modal" data-target="#exampleModal">
+                                <fa-icon [icon]="editicon" style="color: #5c34d5;"></fa-icon></a>
+
+
+                            <a class="btn" (click)="deleteCustomer(row.id)">
+                                <fa-icon [icon]="fatrash" style="color: #d53449;"></fa-icon></a>
+                        </div>
+                    </td>
+
+                </tr>
+
+            </tbody>
+        </table>
+        <nav *ngIf="totalPages > 1">
+            <ul class="pagination pagination-sm justify-content-end mb-0">
+                <li class="page-item" [class.disabled]="page === 1"><a class="page-link" (click)="goToPage(page-1)">«</a></li>
+                <li class="page-item" *ngFor="let p of [].constructor(totalPages); let i = index" [class.active]="page === i+1"><a class="page-link" (click)="goToPage(i+1)">{{i+1}}</a></li>
+                <li class="page-item" [class.disabled]="page === totalPages"><a class="page-link" (click)="goToPage(page+1)">»</a></li>
+            </ul>
+        </nav>
+    </div>
+
+
+    <!-- Model Form -->
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">{{title2}}</h5>
+                    <button type="button" class="close" #closeModal data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <form [formGroup]="customerForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Customer</label>
+                                <input type="text" class="form-control" formControlName="customer_name">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Contact</label>
+                                <input type="text" class="form-control" formControlName="phone">
+                            </div>
+
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="text" class="form-control" formControlName="email">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Address</label>
+                                <input type="text" class="form-control" formControlName="address">
+                            </div>
+
+                        </div>
+                        
+                    </form>
+
+                </div>
+                <div class="modal-footer">
+                    <div class="btn-group">
+                        <div class="px-2">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div>
+                        <div *ngIf=" menuType == true">
+                            <button type="submit" class="btn btn-success" [disabled]="customerForm.invalid"
+                                (click)="onSubmit()">Submit</button>
+                        </div>
+                        <div *ngIf="menuType == false">
+                            <button type="submit" class="btn btn-warning" [disabled]="customerForm.invalid"
+                                (click)="editCustomer()">Update</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,5 @@
+<div class="toast-container">
+  <div *ngIf="visible" class="toast-box toast-{{ toast.type }}">
+    <i class="fas {{ iconMap[toast.type] }} mr-2"></i>{{ toast.message }}
+  </div>
+</div>

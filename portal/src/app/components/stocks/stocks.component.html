@@ -1,0 +1,150 @@
+<div class="px-3 py-3">
+    <!-- <h4 class="card-title mb-1">{{this.title}}</h4>
+    <br> -->
+    <h4 class="card-title mb-1">{{title}}</h4>
+    <br>
+    <p></p>
+    <!-- Button trigger modal -->
+    <button type="button" class="btn btn-primary py-2" (click)=" menuType=true" data-toggle="modal"
+        data-target="#exampleModal">
+        Create New
+    </button>
+    <!-- <a href="/stylecategories/addform" class="btn btn-sm btn-primary">Create New</a> -->
+
+    <!-- <div class="py-2">
+        <form [formGroup]="searchForm" (ngSubmit)="onSearchSubmit()">
+        <input type="text" class="form-control" placeholder="Search..." formControlName="searchValue"/>
+        </form>
+    </div> -->
+    <div class="py-2">
+        <input type="text" class="form-control mb-2" placeholder="Search stocks..." (keyup)="onSearch($any($event.target).value)">
+        <table class="table table-striped text-center">
+            <thead>
+                <tr>
+                    <th scope="col">SI</th>
+                    <th scope="col">Id</th>
+                    <th scope="col">Product Code</th>
+                    <th scope="col">Quantiy</th>
+                    <th scope="col">Warehouse</th>
+                    <th scope="col">Update Date</th>
+                    <th scope="col">Action</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let row of stock; index as i">
+                    <td>{{i+1}}</td>
+                    <td>{{row.id}}</td>
+                    <td>{{filterProductData(row.productid)}}</td>
+                    <!-- <td>
+                        <span [ngSwitch]="row.productid">
+                            <span *ngSwitchCase="1">PMSI</span>
+                            <span *ngSwitchCase="2">PGIG</span>
+                            <span *ngSwitchCase="3">PASUS</span>
+                            <span *ngSwitchCase="4">PSHIB</span>
+                            <span *ngSwitchCase="5">PWEST</span>
+                            <span *ngSwitchCase="6">PSEA</span>
+                            <span *ngSwitchCase="9">PTE</span>
+                            <span *ngSwitchDefault="">{{row.productid}}</span>
+                        </span>
+                    </td> -->
+                    <td>{{row.quantity}}</td>
+                    <td>
+                        <span [ngSwitch]="row.warehouseid">
+                            <span *ngSwitchCase="1">Dhaka Warehouse</span>
+                            <span *ngSwitchCase="2">Rajshahi Warehouse</span>
+                            <span *ngSwitchCase="3">Chittagong Warehouse</span>
+                    
+                            <span *ngSwitchDefault="">{{row.warehouseid}}</span>
+                        </span>
+                    </td>
+                    <td>{{row.updatedate | date:'medium'}}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn" (click)="onEditById(row)" data-toggle="modal" data-target="#exampleModal">
+                                <fa-icon [icon]="editicon" style="color: #5c34d5;"></fa-icon></a>
+
+                            <a class="btn" (click)="deleteStock(row.id)">
+                                <fa-icon [icon]="fatrash" style="color: #d53449;"></fa-icon></a>
+                        </div>
+                    </td>
+
+                </tr>
+
+            </tbody>
+        </table>
+        <nav *ngIf="totalPages > 1">
+            <ul class="pagination pagination-sm justify-content-end mb-0">
+                <li class="page-item" [class.disabled]="page === 1"><a class="page-link" (click)="goToPage(page-1)">«</a></li>
+                <li class="page-item" *ngFor="let p of [].constructor(totalPages); let i = index" [class.active]="page === i+1"><a class="page-link" (click)="goToPage(i+1)">{{i+1}}</a></li>
+                <li class="page-item" [class.disabled]="page === totalPages"><a class="page-link" (click)="goToPage(page+1)">»</a></li>
+            </ul>
+        </nav>
+    </div>
+
+
+    <!-- Model Form -->
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">{{title2}}</h5>
+                    <button type="button" class="close" #closeModal data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <form [formGroup]="stockForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Product Code</label>
+                                <select id="buyersId" class="form-select" formControlName="productid">
+                                    <option *ngFor="let data of product" [value]="data.id">
+                                        {{data.pcode}}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Warehouse</label>
+                                <select id="buyersId" class="form-select" formControlName="warehouseid">
+                                    <option *ngFor="let data of warehouse" [value]="data.id">
+                                        {{data.wname}}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Quantiy</label>
+                                <input type="text" class="form-control" formControlName="quantity">
+                            </div>
+
+                        </div>
+
+
+                    </form>
+
+                </div>
+                <div class="modal-footer">
+                    <div class="btn-group">
+                        <div class="px-2">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div>
+                        <div *ngIf=" menuType == true">
+                            <button type="submit" class="btn btn-success" [disabled]="stockForm.invalid"
+                                (click)="onSubmit()">Submit</button>
+                        </div>
+                        <div *ngIf="menuType == false">
+                            <button type="submit" class="btn btn-warning" [disabled]="stockForm.invalid"
+                                (click)="editStock()">Update</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
