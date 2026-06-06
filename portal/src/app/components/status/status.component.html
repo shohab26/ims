@@ -1,18 +1,15 @@
-<div class="px-3 py-3">
-    <!-- <h4 class="card-title mb-1">{{this.title}}</h4>
-    <br> -->
-    <h4 class="card-title mb-1">{{title}}</h4>
-    <br>
-    <p></p>
-    <!-- Button trigger modal -->
-    <button type="button" class="btn btn-primary py-2" (click)=" menuType=true" data-toggle="modal"
-        data-target="#exampleModal" *ngIf="authService.hasPermission('status', 'create')">
-        Create New
-    </button>
-    <!-- <a href="/stylecategories/addform" class="btn btn-sm btn-primary">Create New</a> -->
+<div class="page-section">
 
-    <div class="py-2">
-        <input type="text" class="form-control mb-2" placeholder="Search status..." (keyup)="onSearch($any($event.target).value)">
+    <div class="page-section-header">
+        <h4 class="card-title mb-0">{{title}}</h4>
+        <button type="button" class="btn btn-primary" (click)="menuType=true" data-toggle="modal"
+            data-target="#exampleModal" *ngIf="authService.hasPermission('status', 'create')">
+            <i class="fas fa-plus mr-1"></i> Create New
+        </button>
+    </div>
+
+    <div class="mt-3">
+        <input type="text" class="form-control mb-3" placeholder="Search status..." (keyup)="onSearch($any($event.target).value)">
         <table class="table table-striped text-center">
             <thead>
                 <tr>
@@ -55,8 +52,7 @@
         </nav>
     </div>
 
-
-    <!-- Model Form -->
+    <!-- Modal -->
 
 
     <!-- Modal -->

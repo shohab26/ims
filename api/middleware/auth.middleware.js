@@ -33,6 +33,14 @@ const requireSuperAdmin = (req, res, next) => {
     next();
 };
 
+const permissionColumnsByMethod = Object.freeze({
+    GET: 'can_view',
+    POST: 'can_create',
+    PATCH: 'can_update',
+    PUT: 'can_update',
+    DELETE: 'can_delete',
+});
+
 /**
  * Middleware: Check if user has permission for a specific module and action.
  */
@@ -43,10 +51,7 @@ const checkPermission = (moduleName) => {
             return next();
         }
 
-        let actionCol = 'can_view';
-        if (req.method === 'POST') actionCol = 'can_create';
-        else if (req.method === 'PATCH' || req.method === 'PUT') actionCol = 'can_update';
-        else if (req.method === 'DELETE') actionCol = 'can_delete';
+        const actionCol = permissionColumnsByMethod[req.method] || 'can_view';
 
         // Bypass strict API view checks for reference data so dropdowns and related names load correctly
         // on other pages (e.g., categories load on the products page).

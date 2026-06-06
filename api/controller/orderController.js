@@ -1,14 +1,9 @@
 const pool = require('../connection');
 const stockService = require('../services/stockupdate');
-
-const paginate = (rows, total, page, limit) => ({
-    data: rows, total, page, totalPages: Math.ceil(total / limit)
-});
+const { getPagination, paginate } = require('../utils/pagination');
 
 const findAll = async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = getPagination(req.query);
     try {
         const [data, count] = await Promise.all([
             pool.query('SELECT * FROM order_details ORDER BY id DESC LIMIT $1 OFFSET $2', [limit, offset]),
@@ -20,9 +15,7 @@ const findAll = async (req, res) => {
 
 const findByKeyword = async (req, res) => {
     const value = req.query.value;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = getPagination(req.query);
     if (!value) return findAll(req, res);
     try {
         const [data, count] = await Promise.all([

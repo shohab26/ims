@@ -1,10 +1,11 @@
 const pool = require('../connection');
 const bcrypt = require('bcryptjs');
+const { sendPasswordChangeOtp } = require('../services/passwordSetupService');
 
 const findAll = async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT u.id, u.full_name, u.email, u.is_active, u.created_at,
+            `SELECT u.id, u.full_name, u.email, u.is_active, u.must_change_password, u.created_at,
                     r.id as role_id, r.role_name
              FROM users u
              LEFT JOIN roles r ON u.role_id = r.id
@@ -17,7 +18,7 @@ const findAll = async (req, res) => {
 const findById = async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT u.id, u.full_name, u.email, u.is_active, u.created_at,
+            `SELECT u.id, u.full_name, u.email, u.is_active, u.must_change_password, u.created_at,
                     r.id as role_id, r.role_name
              FROM users u
              LEFT JOIN roles r ON u.role_id = r.id
@@ -34,17 +35,25 @@ const save = async (req, res) => {
     if (!full_name || !email || !password || !role_id) {
         return res.status(400).json({ message: 'full_name, email, password, and role_id are required.' });
     }
+    const client = await pool.connect();
     try {
         const password_hash = await bcrypt.hash(password, 10);
-        await pool.query(
-            `INSERT INTO users(full_name, email, password_hash, role_id, is_active)
-             VALUES($1, $2, $3, $4, $5)`,
+        await client.query('BEGIN');
+        const result = await client.query(
+            `INSERT INTO users(full_name, email, password_hash, role_id, is_active, must_change_password)
+             VALUES($1, $2, $3, $4, $5, TRUE)
+             RETURNING id, full_name, email`,
             [full_name, email, password_hash, role_id, is_active !== undefined ? is_active : true]
         );
-        res.status(200).json({ message: 'User created successfully.' });
+        await sendPasswordChangeOtp(result.rows[0], client);
+        await client.query('COMMIT');
+        res.status(200).json({ message: 'User created successfully. An OTP has been sent to the user email.' });
     } catch (err) {
+        await client.query('ROLLBACK');
         if (err.code === '23505') return res.status(409).json({ message: 'Email already exists.' });
-        res.status(500).json(err);
+        res.status(500).json({ message: err.message || 'Failed to create user.', error: err });
+    } finally {
+        client.release();
     }
 };
 

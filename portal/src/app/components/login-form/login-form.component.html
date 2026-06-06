@@ -1,63 +1,113 @@
-<div class="login-page" style="min-height:100vh; background: linear-gradient(135deg, #1a237e 0%, #283593 60%, #3949ab 100%); display:flex; align-items:center; justify-content:center;">
-  <div class="card shadow-lg" style="width:100%; max-width:420px; border-radius:16px; overflow:hidden;">
+<div class="login-root">
 
-    <!-- Header -->
-    <div class="card-header text-center py-4" style="background:#1a237e; border:none;">
-      <i class="fas fa-boxes fa-2x text-white mb-2"></i>
-      <h4 class="text-white mb-0 font-weight-bold">InvenTrack</h4>
-      <small class="text-white-50">Inventory Management System</small>
+  <!-- Left panel — branding -->
+  <div class="login-brand d-none d-lg-flex">
+    <div class="brand-content">
+      <div class="brand-logo-wrap">
+        <i class="fas fa-cubes"></i>
+      </div>
+      <h1 class="brand-name">InvenTrack</h1>
+      <p class="brand-tagline">Smart Inventory Management<br>for Modern Businesses</p>
+      <div class="brand-features">
+        <div class="feature-item"><i class="fas fa-check-circle"></i> Real-time stock tracking</div>
+        <div class="feature-item"><i class="fas fa-check-circle"></i> Multi-warehouse support</div>
+        <div class="feature-item"><i class="fas fa-check-circle"></i> Role-based access control</div>
+        <div class="feature-item"><i class="fas fa-check-circle"></i> Purchase & delivery management</div>
+      </div>
     </div>
+    <div class="brand-overlay"></div>
+  </div>
 
-    <!-- Body -->
-    <div class="card-body p-4">
-      <p class="text-center text-muted mb-4">Sign in to your account</p>
+  <!-- Right panel — form -->
+  <div class="login-form-panel">
+    <div class="login-form-inner">
 
-      <!-- Error Alert -->
-      <div *ngIf="errorMsg" class="alert alert-danger alert-dismissible py-2" role="alert">
-        <i class="fas fa-exclamation-circle mr-1"></i> {{ errorMsg }}
+      <!-- Mobile logo -->
+      <div class="mobile-logo d-lg-none text-center mb-4">
+        <div class="mobile-logo-icon"><i class="fas fa-cubes"></i></div>
+        <h4 class="mt-2 font-weight-bold text-dark">InvenTrack</h4>
       </div>
 
-      <form (ngSubmit)="login()">
+      <!-- Step: login -->
+      <ng-container *ngIf="step === 'login'">
+        <h2 class="form-title">Welcome back</h2>
+        <p class="form-subtitle">Sign in to your account to continue</p>
 
-        <div class="form-group">
-          <label for="loginEmail">Email Address</label>
-          <div class="input-group">
-            <input id="loginEmail" type="email" class="form-control"
-              placeholder="admin@inventory.com"
-              [(ngModel)]="email" name="email" required
-              [disabled]="isLoading">
-            <div class="input-group-append">
-              <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-            </div>
-          </div>
+        <div *ngIf="errorMsg" class="alert-error">
+          <i class="fas fa-exclamation-circle"></i> {{ errorMsg }}
         </div>
 
-        <div class="form-group">
-          <label for="loginPassword">Password</label>
-          <div class="input-group">
-            <input id="loginPassword" type="password" class="form-control"
-              placeholder="••••••••"
-              [(ngModel)]="password" name="password" required
-              [disabled]="isLoading">
-            <div class="input-group-append">
-              <span class="input-group-text"><i class="fas fa-lock"></i></span>
+        <form (ngSubmit)="login()" autocomplete="on">
+          <div class="field-group">
+            <label class="field-label">Email Address</label>
+            <div class="field-wrap">
+              <i class="fas fa-envelope field-icon"></i>
+              <input type="email" class="field-input" placeholder="you@company.com"
+                [(ngModel)]="email" name="email" required [disabled]="isLoading" autocomplete="email">
             </div>
           </div>
+
+          <div class="field-group">
+            <label class="field-label">Password</label>
+            <div class="field-wrap">
+              <i class="fas fa-lock field-icon"></i>
+              <input type="password" class="field-input" placeholder="Enter your password"
+                [(ngModel)]="password" name="password" required [disabled]="isLoading" autocomplete="current-password">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-login" [disabled]="isLoading">
+            <span *ngIf="isLoading"><i class="fas fa-spinner fa-spin mr-2"></i>Signing in...</span>
+            <span *ngIf="!isLoading"><i class="fas fa-sign-in-alt mr-2"></i>Sign In</span>
+          </button>
+        </form>
+      </ng-container>
+
+      <!-- Step: change password -->
+      <ng-container *ngIf="step === 'change-password'">
+        <div class="otp-header">
+          <div class="otp-icon-wrap"><i class="fas fa-shield-alt"></i></div>
+          <h2 class="form-title mt-3">Set Your Password</h2>
+          <p class="form-subtitle">A 6-digit code was sent to<br><strong>{{ email }}</strong></p>
         </div>
 
-        <button id="btn-login" type="submit" class="btn btn-block btn-primary mt-3"
-          style="background:#1a237e; border-color:#1a237e; border-radius:8px; padding:10px;"
-          [disabled]="isLoading">
-          <span *ngIf="isLoading"><i class="fas fa-spinner fa-spin mr-2"></i>Signing in...</span>
-          <span *ngIf="!isLoading"><i class="fas fa-sign-in-alt mr-2"></i>Sign In</span>
-        </button>
+        <div *ngIf="errorMsg" class="alert-error">
+          <i class="fas fa-exclamation-circle"></i> {{ errorMsg }}
+        </div>
 
-      </form>
+        <form (ngSubmit)="completePasswordChange()">
+          <div class="field-group">
+            <label class="field-label">Verification Code</label>
+            <div class="field-wrap">
+              <i class="fas fa-key field-icon"></i>
+              <input type="text" class="field-input otp-input" placeholder="6-digit code"
+                [(ngModel)]="otp" name="otp" required [disabled]="isLoading"
+                autocomplete="one-time-code" maxlength="6">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">New Password <span class="field-hint">(min. 8 characters)</span></label>
+            <div class="field-wrap">
+              <i class="fas fa-lock field-icon"></i>
+              <input type="password" class="field-input" placeholder="Create a strong password"
+                [(ngModel)]="newPassword" name="newPassword" required [disabled]="isLoading">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-login btn-success-login" [disabled]="isLoading">
+            <span *ngIf="isLoading"><i class="fas fa-spinner fa-spin mr-2"></i>Updating...</span>
+            <span *ngIf="!isLoading"><i class="fas fa-check mr-2"></i>Set New Password</span>
+          </button>
+
+          <button type="button" class="btn-back" (click)="step='login'; errorMsg=''">
+            <i class="fas fa-arrow-left mr-1"></i> Back to Sign In
+          </button>
+        </form>
+      </ng-container>
+
+      <p class="login-footer-note">Contact your administrator for account access.</p>
     </div>
-
-    <div class="card-footer text-center text-muted py-3" style="font-size:12px; background:#f8f9fa;">
-      Contact your administrator for account access.
-    </div>
-
   </div>
+
 </div>

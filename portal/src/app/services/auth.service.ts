@@ -25,6 +25,12 @@ export interface LoginResponse {
   permissions: Permission[];
 }
 
+export interface PasswordChangeRequiredResponse {
+  password_change_required: true;
+  email: string;
+  message: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private baseUrl = 'http://localhost:3001';
@@ -34,8 +40,19 @@ export class AuthService {
 
   constructor(private http: HttpClient, private router: Router) {}
 
-  login(email: string, password: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.baseUrl}/auth/login`, { email, password }).pipe(
+  login(email: string, password: string): Observable<LoginResponse | PasswordChangeRequiredResponse> {
+    return this.http.post<LoginResponse | PasswordChangeRequiredResponse>(`${this.baseUrl}/auth/login`, { email, password }).pipe(
+      tap(res => {
+        if ('password_change_required' in res) return;
+        localStorage.setItem(this.TOKEN_KEY, res.token);
+        localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
+        localStorage.setItem(this.PERMS_KEY, JSON.stringify(res.permissions));
+      })
+    );
+  }
+
+  completePasswordChange(email: string, otp: string, new_password: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.baseUrl}/auth/complete-password-change`, { email, otp, new_password }).pipe(
       tap(res => {
         localStorage.setItem(this.TOKEN_KEY, res.token);
         localStorage.setItem(this.USER_KEY, JSON.stringify(res.user));
