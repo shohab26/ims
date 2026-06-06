@@ -1,0 +1,190 @@
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2 align-items-center">
+      <div class="col-sm-6">
+        <h1 class="m-0"><i class="fas fa-shield-alt mr-2 text-primary"></i>Roles Management</h1>
+      </div>
+      <div class="col-sm-6 text-right">
+        <button id="btn-add-role" class="btn btn-primary" (click)="openAddModal()">
+          <i class="fas fa-plus mr-1"></i> New Role
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="content">
+  <div class="container-fluid">
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="text-center py-5">
+      <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+    </div>
+
+    <!-- Table Card -->
+    <div *ngIf="!isLoading" class="card card-outline card-primary">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-list mr-1"></i> All Roles ({{ roles.length }})</h3>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover table-striped mb-0">
+          <thead class="thead-light">
+            <tr>
+              <th style="width:60px">#</th>
+              <th>Role Name</th>
+              <th>Description</th>
+              <th>Created</th>
+              <th style="width:130px" class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let role of roles; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td>
+                <span class="badge" [ngClass]="role.role_name === 'super_admin' ? 'badge-danger' : 'badge-primary'">
+                  {{ formatRoleName(role.role_name) }}
+                </span>
+              </td>
+              <td>{{ role.description || '—' }}</td>
+              <td>{{ role.created_at | date:'mediumDate' }}</td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-info mr-1" (click)="openEditModal(role)" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-warning mr-1" (click)="openPermissionsModal(role)" 
+                  [disabled]="role.role_name === 'super_admin'" title="Manage Permissions">
+                  <i class="fas fa-key"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" (click)="delete(role)"
+                  [disabled]="role.role_name === 'super_admin'" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="roles.length === 0">
+              <td colspan="5" class="text-center text-muted py-4">No roles found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Modal -->
+<div class="modal-backdrop-custom" *ngIf="showModal">
+  <div class="modal-dialog-custom">
+    <div class="card card-primary">
+      <div class="card-header">
+        <h3 class="card-title">{{ isEditMode ? 'Edit Role' : 'Create New Role' }}</h3>
+        <button type="button" class="close text-white" (click)="closeModal()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="card-body">
+        <div *ngIf="errorMsg" class="alert alert-danger py-2">{{ errorMsg }}</div>
+
+        <div class="form-group">
+          <label for="role_name">Role Name <span class="text-danger">*</span></label>
+          <input id="role_name" type="text" class="form-control" placeholder="e.g. manager"
+            [(ngModel)]="form.role_name" [disabled]="isEditMode && form.role_name === 'super_admin'">
+          <small class="text-muted">Lowercase, underscores allowed (e.g. warehouse_staff)</small>
+        </div>
+
+        <div class="form-group">
+          <label for="role_desc">Description</label>
+          <textarea id="role_desc" class="form-control" rows="3" placeholder="What can this role do?"
+            [(ngModel)]="form.description"></textarea>
+        </div>
+      </div>
+      <div class="card-footer text-right">
+        <button type="button" class="btn btn-default mr-2" (click)="closeModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="save()">
+          <i class="fas fa-save mr-1"></i> {{ isEditMode ? 'Update' : 'Create' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Permissions Modal -->
+<div class="modal-backdrop-custom" *ngIf="showPermsModal">
+  <div class="modal-dialog-custom modal-lg">
+    <div class="card card-warning">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-key mr-1"></i> Manage Permissions: {{ formatRoleName(selectedRoleForPerms?.role_name || '') }}
+        </h3>
+        <button type="button" class="close text-white" (click)="closePermsModal()">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <div *ngIf="isLoading" class="text-center py-4">
+          <i class="fas fa-spinner fa-spin fa-2x text-warning"></i>
+        </div>
+        
+        <table class="table table-striped table-hover mb-0" *ngIf="!isLoading">
+          <thead class="thead-light">
+            <tr>
+              <th>Module Name</th>
+              <th class="text-center">
+                View<br>
+                <input type="checkbox" (change)="toggleAll('can_view', $event)">
+              </th>
+              <th class="text-center">
+                Create<br>
+                <input type="checkbox" (change)="toggleAll('can_create', $event)">
+              </th>
+              <th class="text-center">
+                Update<br>
+                <input type="checkbox" (change)="toggleAll('can_update', $event)">
+              </th>
+              <th class="text-center">
+                Delete<br>
+                <input type="checkbox" (change)="toggleAll('can_delete', $event)">
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of permissions">
+              <td class="font-weight-bold">{{ p.display_name }}</td>
+              <td class="text-center">
+                <div class="icheck-primary d-inline">
+                  <input type="checkbox" [id]="'view_'+p.module_id" [(ngModel)]="p.can_view">
+                  <label [for]="'view_'+p.module_id"></label>
+                </div>
+              </td>
+              <td class="text-center">
+                <div class="icheck-primary d-inline">
+                  <input type="checkbox" [id]="'create_'+p.module_id" [(ngModel)]="p.can_create">
+                  <label [for]="'create_'+p.module_id"></label>
+                </div>
+              </td>
+              <td class="text-center">
+                <div class="icheck-primary d-inline">
+                  <input type="checkbox" [id]="'update_'+p.module_id" [(ngModel)]="p.can_update">
+                  <label [for]="'update_'+p.module_id"></label>
+                </div>
+              </td>
+              <td class="text-center">
+                <div class="icheck-primary d-inline">
+                  <input type="checkbox" [id]="'delete_'+p.module_id" [(ngModel)]="p.can_delete">
+                  <label [for]="'delete_'+p.module_id"></label>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer text-right">
+        <button type="button" class="btn btn-default mr-2" (click)="closePermsModal()">Cancel</button>
+        <button type="button" class="btn btn-warning" (click)="savePermissions()" [disabled]="isSavingPerms">
+          <i class="fas fa-spinner fa-spin mr-1" *ngIf="isSavingPerms"></i>
+          <i class="fas fa-save mr-1" *ngIf="!isSavingPerms"></i> Save Permissions
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,5 +1,6 @@
+import { AuthService } from '../../services/auth.service';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { faPenToSquare, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faEye } from '@fortawesome/free-solid-svg-icons';
 import { Order, Product, Status, Vendor } from '../../model/inventory.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
@@ -9,12 +10,13 @@ import { ToastService } from '../../services/toast.service';
 export class OrdersComponent implements OnInit {
   @ViewChild('closeModal') closeModal!: ElementRef;
   title = 'Orders List'; title2 = 'Order Entry Form'; menuType = true;
-  fatrash = faTrash; editicon = faPenToSquare;
+  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye;
   order: Order[] = []; product: Product[] = []; vendor: Vendor[] = []; status: Status[] = [];
   orderForm!: FormGroup; orderModel: Order = new Order();
   searchKeyword = ''; page = 1; totalPages = 1;
+  viewOnly = false;
 
-  constructor(private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
+  constructor(public authService: AuthService, private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
 
   ngOnInit() {
     this.orderForm = this.fb.group({ quantity: ['', Validators.required], productid: ['', Validators.required], statusid: ['', Validators.required], unit_price: ['', Validators.required], total_price: ['', Validators.required], vendorid: ['', Validators.required], createdate: [''] });
@@ -42,6 +44,13 @@ export class OrdersComponent implements OnInit {
     this.service.deleteOrder(id).subscribe({ next: () => { this.toast.show('Order deleted.', 'warning'); this.load(); }, error: () => this.toast.show('Delete failed.', 'error') });
   }
 
+  viewOrder(row: any) {
+    this.menuType = false;
+    this.viewOnly = true;
+    this.orderForm.patchValue({ quantity: row.quantity, productid: row.productid, statusid: row.statusid, unit_price: row.unit_price, total_price: row.total_price, vendorid: row.vendorid });
+    this.orderForm.disable();
+  }
+
   onSubmit() {
     if (this.orderForm.valid) this.service.createOrder(this.orderForm.value).subscribe({
       next: () => { this.toast.show('Order created successfully.', 'success'); this.load(); this.orderForm.reset(); this.menuType = true; this.closeModal.nativeElement.click(); },
@@ -49,7 +58,13 @@ export class OrdersComponent implements OnInit {
     });
   }
 
-  onEditById(row: any) { this.menuType = false; this.orderModel.id = row.id; this.orderForm.patchValue({ quantity: row.quantity, productid: row.productid, statusid: row.statusid, unit_price: row.unit_price, total_price: row.total_price, vendorid: row.vendorid }); }
+  onEditById(row: any) {
+    this.menuType = false;
+    this.viewOnly = false;
+    this.orderForm.enable();
+    this.orderModel.id = row.id;
+    this.orderForm.patchValue({ quantity: row.quantity, productid: row.productid, statusid: row.statusid, unit_price: row.unit_price, total_price: row.total_price, vendorid: row.vendorid });
+  }
 
   editOrder() {
     if (this.orderForm.valid) { Object.assign(this.orderModel, this.orderForm.value);

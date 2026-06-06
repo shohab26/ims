@@ -13,7 +13,7 @@ import { LoginLayoutComponent } from './components/login-layout/login-layout.com
 import { LoginFormComponent } from './components/login-form/login-form.component';
 import { RegisterComponent } from './components/register/register.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { ProductsComponent } from './components/products/products.component';
 import { CategoriesComponent } from './components/categories/categories.component';
@@ -25,6 +25,9 @@ import { StocksComponent } from './components/stocks/stocks.component';
 import { OrdersComponent } from './components/orders/orders.component';
 import { DeliveryComponent } from './components/delivery/delivery.component';
 import { ToastComponent } from './components/toast/toast.component';
+import { RolesComponent } from './components/roles/roles.component';
+import { UsersManagementComponent } from './components/users-management/users-management.component';
+import { authInterceptor } from './interceptors/auth.interceptor';
 
 import { NgChartsModule } from 'ng2-charts';
 
@@ -49,7 +52,9 @@ import { NgChartsModule } from 'ng2-charts';
     StocksComponent,
     OrdersComponent,
     DeliveryComponent,
-    ToastComponent
+    ToastComponent,
+    RolesComponent,
+    UsersManagementComponent,
   ],
   imports: [
     BrowserModule,
@@ -57,11 +62,11 @@ import { NgChartsModule } from 'ng2-charts';
     FormsModule,
     ReactiveFormsModule,
     FontAwesomeModule,
-    NgChartsModule
+    NgChartsModule,
   ],
   providers: [
     provideClientHydration(),
-    provideHttpClient(withFetch())
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor]))
   ],
   bootstrap: [AppComponent]
 })

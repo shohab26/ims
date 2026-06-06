@@ -12,6 +12,33 @@
 
   <!-- Right navbar links -->
   <ul class="navbar-nav ml-auto">
+    <!-- User Info Dropdown -->
+    <li class="nav-item dropdown user-menu" *ngIf="user">
+      <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
+        <i class="fas fa-user-circle mr-1"></i>
+        <span class="d-none d-md-inline">{{ user.full_name }}</span>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+        <!-- User image -->
+        <li class="user-header bg-primary">
+          <i class="fas fa-user-circle fa-4x text-white mt-2"></i>
+          <p>
+            {{ user.full_name }}
+            <small>{{ user.email }}</small>
+            <span class="badge" [ngClass]="user.role_name === 'super_admin' ? 'badge-danger' : 'badge-light'">
+              {{ formatRoleName(user.role_name) }}
+            </span>
+          </p>
+        </li>
+        <!-- Menu Footer-->
+        <li class="user-footer text-center">
+          <button class="btn btn-default btn-flat" (click)="logout()">
+            <i class="fas fa-sign-out-alt mr-1"></i> Sign out
+          </button>
+        </li>
+      </ul>
+    </li>
+
     <!-- Fullscreen toggle -->
     <li class="nav-item">
       <a class="nav-link" data-widget="fullscreen" href="#" role="button">

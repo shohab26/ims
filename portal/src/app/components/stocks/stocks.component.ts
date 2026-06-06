@@ -1,5 +1,6 @@
+import { AuthService } from '../../services/auth.service';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { faPenToSquare, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faEye } from '@fortawesome/free-solid-svg-icons';
 import { Product, Stock, Warehouse } from '../../model/inventory.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
@@ -9,12 +10,13 @@ import { ToastService } from '../../services/toast.service';
 export class StocksComponent implements OnInit {
   @ViewChild('closeModal') closeModal!: ElementRef;
   title = 'Stock List'; title2 = 'Stock Entry Form'; menuType = true;
-  fatrash = faTrash; editicon = faPenToSquare;
+  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye;
   stock: Stock[] = []; product: Product[] = []; warehouse: Warehouse[] = [];
   stockForm!: FormGroup; stockModel: Stock = new Stock();
   searchKeyword = ''; page = 1; totalPages = 1;
+  viewOnly = false;
 
-  constructor(private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
+  constructor(public authService: AuthService, private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
 
   ngOnInit() {
     this.stockForm = this.fb.group({ quantity: ['', Validators.required], productid: ['', Validators.required], warehouseid: ['', Validators.required], updatedate: [''] });
@@ -35,6 +37,13 @@ export class StocksComponent implements OnInit {
     this.service.deleteStock(id).subscribe({ next: () => { this.toast.show('Stock deleted.', 'warning'); this.load(); }, error: () => this.toast.show('Delete failed.', 'error') });
   }
 
+  viewStock(row: any) {
+    this.menuType = false;
+    this.viewOnly = true;
+    this.stockForm.patchValue({ quantity: row.quantity, productid: row.productid, warehouseid: row.warehouseid });
+    this.stockForm.disable();
+  }
+
   onSubmit() {
     if (this.stockForm.valid) this.service.createStock(this.stockForm.value).subscribe({
       next: () => { this.toast.show('Stock created successfully.', 'success'); this.load(); this.stockForm.reset(); this.menuType = true; this.closeModal.nativeElement.click(); },
@@ -42,7 +51,13 @@ export class StocksComponent implements OnInit {
     });
   }
 
-  onEditById(row: any) { this.menuType = false; this.stockModel.id = row.id; this.stockForm.patchValue({ quantity: row.quantity, productid: row.productid, warehouseid: row.warehouseid }); }
+  onEditById(row: any) {
+    this.menuType = false;
+    this.viewOnly = false;
+    this.stockForm.enable();
+    this.stockModel.id = row.id;
+    this.stockForm.patchValue({ quantity: row.quantity, productid: row.productid, warehouseid: row.warehouseid });
+  }
 
   editStock() {
     if (this.stockForm.valid) { Object.assign(this.stockModel, this.stockForm.value);

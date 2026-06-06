@@ -1,5 +1,6 @@
+import { AuthService } from '../../services/auth.service';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { faPenToSquare, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faEye } from '@fortawesome/free-solid-svg-icons';
 import { Status } from '../../model/inventory.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
@@ -9,11 +10,12 @@ import { ToastService } from '../../services/toast.service';
 export class StatusComponent implements OnInit {
   @ViewChild('closeModal') closeModal!: ElementRef;
   title = 'Status List'; title2 = 'Status Entry Form'; menuType = true;
-  fatrash = faTrash; editicon = faPenToSquare;
+  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye;
   status: Status[] = []; statusForm!: FormGroup; statusModel: Status = new Status();
   searchKeyword = ''; page = 1; totalPages = 1;
+  viewOnly = false;
 
-  constructor(private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
+  constructor(public authService: AuthService, private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
 
   ngOnInit() { this.statusForm = this.fb.group({ status: ['', Validators.required] }); this.load(); }
 
@@ -29,6 +31,13 @@ export class StatusComponent implements OnInit {
     this.service.deleteStatus(id).subscribe({ next: () => { this.toast.show('Status deleted.', 'warning'); this.load(); }, error: () => this.toast.show('Delete failed.', 'error') });
   }
 
+  viewStatus(row: any) {
+    this.menuType = false;
+    this.viewOnly = true;
+    this.statusForm.patchValue({ status: row.status });
+    this.statusForm.disable();
+  }
+
   onSubmit() {
     if (this.statusForm.valid) this.service.createStatus(this.statusForm.value).subscribe({
       next: () => { this.toast.show('Status created successfully.', 'success'); this.load(); this.statusForm.reset(); this.menuType = true; this.closeModal.nativeElement.click(); },
@@ -36,7 +45,13 @@ export class StatusComponent implements OnInit {
     });
   }
 
-  onEditById(row: any) { this.menuType = false; this.statusModel.id = row.id; this.statusForm.controls['status'].setValue(row.status); }
+  onEditById(row: any) {
+    this.menuType = false;
+    this.viewOnly = false;
+    this.statusForm.enable();
+    this.statusModel.id = row.id;
+    this.statusForm.controls['status'].setValue(row.status);
+  }
 
   editStatus() {
     if (this.statusForm.valid) { this.statusModel.status = this.statusForm.value.status;

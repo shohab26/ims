@@ -1,44 +1,62 @@
 <div class="login-page" style="min-height:100vh; background: linear-gradient(135deg, #1a237e 0%, #283593 60%, #3949ab 100%); display:flex; align-items:center; justify-content:center;">
-  <div class="card shadow-lg" style="width:100%; max-width:400px; border-radius:12px; overflow:hidden;">
+  <div class="card shadow-lg" style="width:100%; max-width:420px; border-radius:16px; overflow:hidden;">
 
     <!-- Header -->
     <div class="card-header text-center py-4" style="background:#1a237e; border:none;">
       <i class="fas fa-boxes fa-2x text-white mb-2"></i>
-      <h4 class="text-white mb-0 font-weight-bold">Inventory Management System</h4>
-      <small class="text-white-50">Sign in to your account</small>
+      <h4 class="text-white mb-0 font-weight-bold">InvenTrack</h4>
+      <small class="text-white-50">Inventory Management System</small>
     </div>
 
     <!-- Body -->
     <div class="card-body p-4">
+      <p class="text-center text-muted mb-4">Sign in to your account</p>
+
+      <!-- Error Alert -->
+      <div *ngIf="errorMsg" class="alert alert-danger alert-dismissible py-2" role="alert">
+        <i class="fas fa-exclamation-circle mr-1"></i> {{ errorMsg }}
+      </div>
+
       <form (ngSubmit)="login()">
 
         <div class="form-group">
-          <label for="userId">User ID</label>
+          <label for="loginEmail">Email Address</label>
           <div class="input-group">
-            <input id="userId" type="text" class="form-control" placeholder="Enter your user ID"
-              [(ngModel)]="userId" name="userId" required>
+            <input id="loginEmail" type="email" class="form-control"
+              placeholder="admin@inventory.com"
+              [(ngModel)]="email" name="email" required
+              [disabled]="isLoading">
             <div class="input-group-append">
-              <span class="input-group-text"><i class="fas fa-user"></i></span>
+              <span class="input-group-text"><i class="fas fa-envelope"></i></span>
             </div>
           </div>
         </div>
 
         <div class="form-group">
-          <label for="password">Password</label>
+          <label for="loginPassword">Password</label>
           <div class="input-group">
-            <input id="password" type="password" class="form-control" placeholder="Enter your password"
-              [(ngModel)]="password" name="password" required>
+            <input id="loginPassword" type="password" class="form-control"
+              placeholder="••••••••"
+              [(ngModel)]="password" name="password" required
+              [disabled]="isLoading">
             <div class="input-group-append">
               <span class="input-group-text"><i class="fas fa-lock"></i></span>
             </div>
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block mt-3" style="background:#1a237e; border-color:#1a237e;">
-          <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+        <button id="btn-login" type="submit" class="btn btn-block btn-primary mt-3"
+          style="background:#1a237e; border-color:#1a237e; border-radius:8px; padding:10px;"
+          [disabled]="isLoading">
+          <span *ngIf="isLoading"><i class="fas fa-spinner fa-spin mr-2"></i>Signing in...</span>
+          <span *ngIf="!isLoading"><i class="fas fa-sign-in-alt mr-2"></i>Sign In</span>
         </button>
 
       </form>
+    </div>
+
+    <div class="card-footer text-center text-muted py-3" style="font-size:12px; background:#f8f9fa;">
+      Contact your administrator for account access.
     </div>
 
   </div>

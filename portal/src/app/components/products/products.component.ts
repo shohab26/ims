@@ -1,5 +1,6 @@
+import { AuthService } from '../../services/auth.service';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { faPenToSquare, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faEye } from '@fortawesome/free-solid-svg-icons';
 import { Category, Product } from '../../model/inventory.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
@@ -9,11 +10,12 @@ import { ToastService } from '../../services/toast.service';
 export class ProductsComponent implements OnInit {
   @ViewChild('closeModal') closeModal!: ElementRef;
   title = 'Products List'; title2 = 'Product Entry Form'; menuType = true;
-  fatrash = faTrash; editicon = faPenToSquare;
+  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye;
   product: Product[] = []; cate: Category[] = []; productForm!: FormGroup; productModel: Product = new Product();
   searchKeyword = ''; page = 1; totalPages = 1;
+  viewOnly = false;
 
-  constructor(private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
+  constructor(public authService: AuthService, private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
 
   ngOnInit() {
     this.productForm = this.fb.group({ pname: ['', Validators.required], pcode: ['', Validators.required], pcate: ['', Validators.required], price: ['', Validators.required], createdate: [''] });
@@ -33,6 +35,13 @@ export class ProductsComponent implements OnInit {
     this.service.deleteProduct(id).subscribe({ next: () => { this.toast.show('Product deleted.', 'warning'); this.load(); }, error: () => this.toast.show('Delete failed.', 'error') });
   }
 
+  viewProduct(row: any) {
+    this.menuType = false;
+    this.viewOnly = true;
+    this.productForm.patchValue({ pname: row.pname, pcode: row.pcode, pcate: row.pcate, price: row.price });
+    this.productForm.disable();
+  }
+
   onSubmit() {
     if (this.productForm.valid) this.service.createProduct(this.productForm.value).subscribe({
       next: () => { this.toast.show('Product created successfully.', 'success'); this.load(); this.productForm.reset(); this.menuType = true; this.closeModal.nativeElement.click(); },
@@ -40,7 +49,13 @@ export class ProductsComponent implements OnInit {
     });
   }
 
-  onEditById(row: any) { this.menuType = false; this.productModel.id = row.id; this.productForm.patchValue({ pname: row.pname, pcode: row.pcode, pcate: row.pcate, price: row.price }); }
+  onEditById(row: any) {
+    this.menuType = false;
+    this.viewOnly = false;
+    this.productForm.enable();
+    this.productModel.id = row.id;
+    this.productForm.patchValue({ pname: row.pname, pcode: row.pcode, pcate: row.pcate, price: row.price });
+  }
 
   editProduct() {
     if (this.productForm.valid) { Object.assign(this.productModel, this.productForm.value);

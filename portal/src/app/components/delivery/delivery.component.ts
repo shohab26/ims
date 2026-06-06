@@ -1,5 +1,6 @@
+import { AuthService } from '../../services/auth.service';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { faPenToSquare, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faEye } from '@fortawesome/free-solid-svg-icons';
 import { Customer, Delivery, Product, Status } from '../../model/inventory.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
@@ -9,12 +10,13 @@ import { ToastService } from '../../services/toast.service';
 export class DeliveryComponent implements OnInit {
   @ViewChild('closeModal') closeModal!: ElementRef;
   title = 'Delivery List'; title2 = 'Delivery Entry Form'; menuType = true;
-  fatrash = faTrash; editicon = faPenToSquare;
+  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye;
   delivery: Delivery[] = []; product: Product[] = []; customer: Customer[] = []; status: Status[] = [];
   deliveryForm!: FormGroup; deliveryModel: Delivery = new Delivery();
   searchKeyword = ''; page = 1; totalPages = 1;
+  viewOnly = false;
 
-  constructor(private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
+  constructor(public authService: AuthService, private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
 
   ngOnInit() {
     this.deliveryForm = this.fb.group({ quantity: ['', Validators.required], productid: ['', Validators.required], statusid: ['', Validators.required], unit_price: ['', Validators.required], total_price: ['', Validators.required], deliverydate: ['', Validators.required], customerid: ['', Validators.required], createdate: [''] });
@@ -42,6 +44,13 @@ export class DeliveryComponent implements OnInit {
     this.service.deleteDelivery(id).subscribe({ next: () => { this.toast.show('Delivery deleted.', 'warning'); this.load(); }, error: () => this.toast.show('Delete failed.', 'error') });
   }
 
+  viewDelivery(row: any) {
+    this.menuType = false;
+    this.viewOnly = true;
+    this.deliveryForm.patchValue({ quantity: row.quantity, productid: row.productid, statusid: row.statusid, unit_price: row.unit_price, total_price: row.total_price, customerid: row.customerid, deliverydate: row.deliverydate });
+    this.deliveryForm.disable();
+  }
+
   onSubmit() {
     if (this.deliveryForm.valid) this.service.createDelivery(this.deliveryForm.value).subscribe({
       next: () => { this.toast.show('Delivery created successfully.', 'success'); this.load(); this.deliveryForm.reset(); this.menuType = true; this.closeModal.nativeElement.click(); },
@@ -49,7 +58,13 @@ export class DeliveryComponent implements OnInit {
     });
   }
 
-  onEditById(row: any) { this.menuType = false; this.deliveryModel.id = row.id; this.deliveryForm.patchValue({ quantity: row.quantity, productid: row.productid, statusid: row.statusid, unit_price: row.unit_price, total_price: row.total_price, customerid: row.customerid, deliverydate: row.deliverydate }); }
+  onEditById(row: any) {
+    this.menuType = false;
+    this.viewOnly = false;
+    this.deliveryForm.enable();
+    this.deliveryModel.id = row.id;
+    this.deliveryForm.patchValue({ quantity: row.quantity, productid: row.productid, statusid: row.statusid, unit_price: row.unit_price, total_price: row.total_price, customerid: row.customerid, deliverydate: row.deliverydate });
+  }
 
   editDelivery() {
     if (this.deliveryForm.valid) { Object.assign(this.deliveryModel, this.deliveryForm.value);

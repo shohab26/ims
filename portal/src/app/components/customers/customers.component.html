@@ -6,7 +6,7 @@
     <p></p>
     <!-- Button trigger modal -->
     <button type="button" class="btn btn-primary py-2" (click)=" menuType=true" data-toggle="modal"
-        data-target="#exampleModal">
+        data-target="#exampleModal" *ngIf="authService.hasPermission('customers', 'create')">
         Create New
     </button>
     <!-- <a href="/stylecategories/addform" class="btn btn-sm btn-primary">Create New</a> -->
@@ -37,11 +37,13 @@
                     <td>
 
                         <div class="btn-group">
-                            <a class="btn" (click)="onEditById(row)" data-toggle="modal" data-target="#exampleModal">
+                            <a class="btn" (click)="viewCustomer(row)" data-toggle="modal" data-target="#exampleModal">
+                                <fa-icon [icon]="faeye" style="color: #17a2b8;"></fa-icon></a>
+                            <a class="btn" (click)="onEditById(row)" data-toggle="modal" data-target="#exampleModal" *ngIf="authService.hasPermission('customers', 'update')">
                                 <fa-icon [icon]="editicon" style="color: #5c34d5;"></fa-icon></a>
 
 
-                            <a class="btn" (click)="deleteCustomer(row.id)">
+                            <a class="btn" (click)="deleteCustomer(row.id)" *ngIf="authService.hasPermission('customers', 'delete')">
                                 <fa-icon [icon]="fatrash" style="color: #d53449;"></fa-icon></a>
                         </div>
                     </td>
@@ -111,7 +113,7 @@
                             <button type="submit" class="btn btn-success" [disabled]="customerForm.invalid"
                                 (click)="onSubmit()">Submit</button>
                         </div>
-                        <div *ngIf="menuType == false">
+                        <div *ngIf="menuType == false && !viewOnly">
                             <button type="submit" class="btn btn-warning" [disabled]="customerForm.invalid"
                                 (click)="editCustomer()">Update</button>
                         </div>
