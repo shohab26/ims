@@ -94,3 +94,37 @@ export class Delivery {
     deliverydate?: Date
     createdate?: Date
 }
+
+// Invoice / Billing
+export class InvoiceItem {
+  id: number = 0;
+  invoiceid?: number;
+  productid?: number;
+  pname?: string;
+  pcode?: string;
+  description?: string;
+  quantity: number = 1;
+  unit_price: number = 0;
+  total: number = 0;
+}
+
+export class Invoice {
+  id: number = 0;
+  invoice_number?: string;
+  customerid?: number;
+  customer_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  issue_date?: string;
+  due_date?: string;
+  subtotal: number = 0;
+  discount: number = 0;
+  tax_percent: number = 0;
+  tax_amount: number = 0;
+  total: number = 0;
+  status: string = 'draft';
+  notes?: string;
+  createdate?: Date;
+  items: InvoiceItem[] = [];
+}

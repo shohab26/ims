@@ -1,0 +1,138 @@
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { faPenToSquare, faTrash, faEye, faFilePdf, faPlus, faMinus } from '@fortawesome/free-solid-svg-icons';
+import { Invoice, InvoiceItem, Customer, Product } from '../../model/inventory.model';
+import { ProductService } from '../../services/product.service';
+import { ToastService } from '../../services/toast.service';
+import { AuthService } from '../../services/auth.service';
+
+@Component({ selector: 'app-invoices', templateUrl: './invoices.component.html', styleUrl: './invoices.component.css' })
+export class InvoicesComponent implements OnInit {
+  @ViewChild('closeModal') closeModal!: ElementRef;
+
+  title = 'Invoices'; title2 = 'Invoice Form';
+  menuType = true; viewOnly = false;
+  faTrash = faTrash; faEdit = faPenToSquare; faEye = faEye; faPdf = faFilePdf; faPlus = faPlus; faMinus = faMinus;
+
+  invoices: Invoice[] = []; customers: Customer[] = []; products: Product[] = [];
+  invoiceForm!: FormGroup; invoiceModel: Invoice = new Invoice();
+  lineItems: InvoiceItem[] = [];
+  searchKeyword = ''; page = 1; totalPages = 1;
+
+  readonly statuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
+
+  constructor(public authService: AuthService, private svc: ProductService,
+              private fb: FormBuilder, private toast: ToastService) {}
+
+  ngOnInit() {
+    this.invoiceForm = this.fb.group({
+      customerid: ['', Validators.required],
+      due_date:   [''],
+      discount:   [0],
+      tax_percent:[0],
+      notes:      [''],
+      status:     ['draft']
+    });
+    this.load();
+    this.svc.findAllCustomer(1, 200).subscribe({ next: r => this.customers = r.data });
+    this.svc.findAllProduct(1, 200).subscribe({ next: r => this.products = r.data });
+  }
+
+  load() {
+    const obs = this.searchKeyword
+      ? this.svc.findInvoiceByKeyword(this.searchKeyword, this.page)
+      : this.svc.findAllInvoice(this.page);
+    obs.subscribe({ next: r => { this.invoices = r.data; this.totalPages = r.totalPages; } });
+  }
+
+  onSearch(v: string) { this.searchKeyword = v; this.page = 1; this.load(); }
+  goToPage(p: number) { if (p >= 1 && p <= this.totalPages) { this.page = p; this.load(); } }
+
+  // ── Line items ──────────────────────────────────────────────
+  addLine() { this.lineItems.push(new InvoiceItem()); }
+  removeLine(i: number) { this.lineItems.splice(i, 1); this.recalc(); }
+
+  onProductChange(line: InvoiceItem) {
+    const p = this.products.find(x => x.id === +line.productid!);
+    if (p) { line.unit_price = p.price || 0; line.description = p.pname || ''; }
+    this.recalcLine(line);
+  }
+
+  recalcLine(line: InvoiceItem) {
+    line.total = (line.quantity || 0) * (line.unit_price || 0);
+    this.recalc();
+  }
+
+  get subtotal() { return this.lineItems.reduce((s, l) => s + (l.total || 0), 0); }
+  get discount() { return +(this.invoiceForm?.value?.discount || 0); }
+  get taxPct()   { return +(this.invoiceForm?.value?.tax_percent || 0); }
+  get taxAmt()   { return this.subtotal * this.taxPct / 100; }
+  get grandTotal() { return this.subtotal - this.discount + this.taxAmt; }
+  recalc() { /* triggers change detection via getter */ }
+
+  // ── CRUD ────────────────────────────────────────────────────
+  openCreate() {
+    this.menuType = false; this.viewOnly = false; this.invoiceModel = new Invoice();
+    this.lineItems = [new InvoiceItem()];
+    this.invoiceForm.reset({ discount: 0, tax_percent: 0, status: 'draft' });
+    this.invoiceForm.enable();
+  }
+
+  viewInvoice(row: Invoice) {
+    this.svc.findInvoiceById(row.id).subscribe({ next: inv => {
+      this.menuType = false; this.viewOnly = true;
+      this.lineItems = inv.items || [];
+      this.invoiceForm.patchValue({ customerid: inv.customerid, due_date: inv.due_date?.split('T')[0] || '',
+        discount: inv.discount, tax_percent: inv.tax_percent, notes: inv.notes, status: inv.status });
+      this.invoiceForm.disable();
+    }});
+  }
+
+  onEditById(row: Invoice) {
+    this.svc.findInvoiceById(row.id).subscribe({ next: inv => {
+      this.menuType = false; this.viewOnly = false; this.invoiceModel.id = inv.id;
+      this.lineItems = inv.items || [];
+      this.invoiceForm.patchValue({ customerid: inv.customerid, due_date: inv.due_date?.split('T')[0] || '',
+        discount: inv.discount, tax_percent: inv.tax_percent, notes: inv.notes, status: inv.status });
+      this.invoiceForm.enable();
+    }});
+  }
+
+  onSubmit() {
+    if (this.invoiceForm.invalid || !this.lineItems.length) return;
+    const payload = { ...this.invoiceForm.value, items: this.lineItems };
+    this.svc.createInvoice(payload).subscribe({
+      next: () => { this.toast.show('Invoice created.', 'success'); this.load(); this.menuType = true; this.closeModal.nativeElement.click(); },
+      error: () => this.toast.show('Create failed.', 'error')
+    });
+  }
+
+  editInvoice() {
+    if (this.invoiceForm.invalid || !this.lineItems.length) return;
+    const payload = { ...this.invoiceForm.value, items: this.lineItems };
+    this.svc.updateInvoice(this.invoiceModel.id, payload).subscribe({
+      next: () => { this.toast.show('Invoice updated.', 'success'); this.load(); this.menuType = true; this.closeModal.nativeElement.click(); },
+      error: () => this.toast.show('Update failed.', 'error')
+    });
+  }
+
+  deleteInvoice(id: number) {
+    this.svc.deleteInvoice(id).subscribe({
+      next: () => { this.toast.show('Invoice deleted.', 'warning'); this.load(); },
+      error: () => this.toast.show('Delete failed.', 'error')
+    });
+  }
+
+  downloadPDF(id: number, number: string) {
+    this.svc.downloadInvoicePDF(id).subscribe({ next: blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${number}.pdf`; a.click();
+      URL.revokeObjectURL(url);
+    }, error: () => this.toast.show('PDF download failed.', 'error') });
+  }
+
+  getCustomerName(id: any) { return this.customers.find(c => c.id == id)?.customer_name || '—'; }
+  statusClass(s: string) { return { draft:'badge-secondary', sent:'badge-primary', paid:'badge-success', overdue:'badge-danger', cancelled:'badge-dark' }[s] || 'badge-secondary'; }
+  backToList() { this.menuType = true; this.invoiceForm.reset({ discount: 0, tax_percent: 0, status: 'draft' }); this.lineItems = []; }
+}

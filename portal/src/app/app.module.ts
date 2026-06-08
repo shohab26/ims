@@ -27,6 +27,7 @@ import { DeliveryComponent } from './components/delivery/delivery.component';
 import { ToastComponent } from './components/toast/toast.component';
 import { RolesComponent } from './components/roles/roles.component';
 import { UsersManagementComponent } from './components/users-management/users-management.component';
+import { InvoicesComponent } from './components/invoices/invoices.component';
 import { authInterceptor } from './interceptors/auth.interceptor';
 
 import { NgChartsModule } from 'ng2-charts';
@@ -55,6 +56,7 @@ import { NgChartsModule } from 'ng2-charts';
     ToastComponent,
     RolesComponent,
     UsersManagementComponent,
+    InvoicesComponent,
   ],
   imports: [
     BrowserModule,

@@ -18,6 +18,7 @@ const customerRoute = require('./routes/customers');
 const stockRoute = require('./routes/stock');
 const orderRoute = require('./routes/order');
 const deliveryRoute = require('./routes/delivery');
+const invoiceRoute = require('./routes/invoices');
 
 const app = express();
 app.use(cors());
@@ -42,5 +43,6 @@ app.use('/products',   verifyToken, checkPermission('products'), productsRoute);
 app.use('/stocks',     verifyToken, checkPermission('stocks'), stockRoute);
 app.use('/orders',     verifyToken, checkPermission('orders'), orderRoute);
 app.use('/delivery',   verifyToken, checkPermission('delivery'), deliveryRoute);
+app.use('/invoices',   verifyToken, checkPermission('invoices'), invoiceRoute);
 
 module.exports = app;

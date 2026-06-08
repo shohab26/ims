@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/internal/Observable';
-import { Book, Warehouse, Category, Product, Status, Customer, Vendor, Stock, Order, Delivery } from '../model/inventory.model';
+import { Book, Warehouse, Category, Product, Status, Customer, Vendor, Stock, Order, Delivery, Invoice } from '../model/inventory.model';
 import { HttpClient } from '@angular/common/http';
 
 export interface PagedResult<T> { data: T[]; total: number; page: number; totalPages: number; }
@@ -128,4 +128,19 @@ export class ProductService {
   createBook(b: Book): Observable<Book> { return this.http.post<Book>(`${this.baseUrl}/book`, b); }
   updateBook(id: number, b: Book): Observable<Book> { return this.http.patch<Book>(`${this.baseUrl}/book/update/${id}`, b); }
   deleteBook(id: number): Observable<void> { return this.http.delete<void>(`${this.baseUrl}/book/${id}`); }
+
+  // invoices
+  findAllInvoice(page=1, limit=10): Observable<PagedResult<Invoice>> {
+    return this.http.get<PagedResult<Invoice>>(`${this.baseUrl}/invoices/?page=${page}&limit=${limit}`);
+  }
+  findInvoiceByKeyword(kw: string, page=1, limit=10): Observable<PagedResult<Invoice>> {
+    return this.http.get<PagedResult<Invoice>>(`${this.baseUrl}/invoices/search?value=${kw}&page=${page}&limit=${limit}`);
+  }
+  findInvoiceById(id: number): Observable<Invoice> { return this.http.get<Invoice>(`${this.baseUrl}/invoices/${id}`); }
+  createInvoice(inv: Invoice): Observable<any> { return this.http.post<any>(`${this.baseUrl}/invoices`, inv); }
+  updateInvoice(id: number, inv: Invoice): Observable<any> { return this.http.patch<any>(`${this.baseUrl}/invoices/update/${id}`, inv); }
+  deleteInvoice(id: number): Observable<void> { return this.http.delete<void>(`${this.baseUrl}/invoices/${id}`); }
+  downloadInvoicePDF(id: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/invoices/${id}/pdf`, { responseType: 'blob' });
+  }
 }

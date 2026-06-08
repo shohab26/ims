@@ -16,6 +16,7 @@ import { OrdersComponent } from './components/orders/orders.component';
 import { DeliveryComponent } from './components/delivery/delivery.component';
 import { RolesComponent } from './components/roles/roles.component';
 import { UsersManagementComponent } from './components/users-management/users-management.component';
+import { InvoicesComponent } from './components/invoices/invoices.component';
 import { authGuard } from './guards/auth.guard';
 import { roleGuard } from './guards/role.guard';
 import { permissionGuard } from './guards/permission.guard';
@@ -36,6 +37,7 @@ const routes: Routes = [
       { path: 'stock',      component: StocksComponent, canActivate: [permissionGuard], data: { module: 'stocks' } },
       { path: 'order',      component: OrdersComponent, canActivate: [permissionGuard], data: { module: 'orders' } },
       { path: 'delivery',   component: DeliveryComponent, canActivate: [permissionGuard], data: { module: 'delivery' } },
+      { path: 'invoice',    component: InvoicesComponent, canActivate: [permissionGuard], data: { module: 'invoices' } },
       // Admin-only routes
       { path: 'roles',  component: RolesComponent,           canActivate: [roleGuard] },
       { path: 'users',  component: UsersManagementComponent, canActivate: [roleGuard] },

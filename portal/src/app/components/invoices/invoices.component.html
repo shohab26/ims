@@ -1,0 +1,256 @@
+<!-- ═══════════════════════════════════════════ INVOICE PAGE ═════ -->
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-1 align-items-center">
+      <div class="col-sm-6">
+        <h1 class="m-0">{{ menuType ? title : title2 }}</h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a routerLink="/inventory/dashboard">Home</a></li>
+          <li class="breadcrumb-item active">{{ menuType ? 'Invoices' : title2 }}</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="container-fluid">
+
+    <!-- ══════════ LIST VIEW ══════════ -->
+    <div *ngIf="menuType" class="inv-card">
+
+      <!-- toolbar -->
+      <div class="inv-toolbar">
+        <div class="inv-search-wrap">
+          <i class="fas fa-search inv-search-icon"></i>
+          <input class="inv-search" type="text" placeholder="Search invoice #, customer, status…"
+                 [(ngModel)]="searchKeyword" (input)="onSearch(searchKeyword)">
+        </div>
+        <button class="inv-btn-primary" (click)="openCreate()"
+                data-toggle="modal" data-target="#invoiceModal"
+                *ngIf="authService.hasPermission('invoices','create')">
+          <fa-icon [icon]="faPlus"></fa-icon> New Invoice
+        </button>
+      </div>
+
+      <!-- table -->
+      <div class="inv-table-wrap">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Invoice No.</th>
+              <th>Customer</th>
+              <th>Issue Date</th>
+              <th>Due Date</th>
+              <th class="text-right">Total</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let inv of invoices; let i = index" class="inv-row">
+              <td class="muted">{{ (page - 1) * 10 + i + 1 }}</td>
+              <td><span class="inv-number">{{ inv.invoice_number }}</span></td>
+              <td>{{ inv.customer_name }}</td>
+              <td class="muted">{{ inv.issue_date | date:'dd MMM yyyy' }}</td>
+              <td class="muted">{{ inv.due_date | date:'dd MMM yyyy' }}</td>
+              <td class="text-right amount">${{ inv.total | number:'1.2-2' }}</td>
+              <td class="text-center">
+                <span class="inv-badge" [ngClass]="statusClass(inv.status)">{{ inv.status }}</span>
+              </td>
+              <td class="text-center">
+                <div class="action-group">
+                  <button class="act-btn view"   title="View"
+                          (click)="viewInvoice(inv)"
+                          data-toggle="modal" data-target="#invoiceModal"
+                          *ngIf="authService.hasPermission('invoices','view')">
+                    <fa-icon [icon]="faEye"></fa-icon>
+                  </button>
+                  <button class="act-btn edit"   title="Edit"
+                          (click)="onEditById(inv)"
+                          data-toggle="modal" data-target="#invoiceModal"
+                          *ngIf="authService.hasPermission('invoices','update')">
+                    <fa-icon [icon]="faEdit"></fa-icon>
+                  </button>
+                  <button class="act-btn pdf"    title="Download PDF"
+                          (click)="downloadPDF(inv.id, inv.invoice_number || 'invoice')">
+                    <fa-icon [icon]="faPdf"></fa-icon>
+                  </button>
+                  <button class="act-btn del"    title="Delete"
+                          (click)="deleteInvoice(inv.id)"
+                          *ngIf="authService.hasPermission('invoices','delete')">
+                    <fa-icon [icon]="faTrash"></fa-icon>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="!invoices.length">
+              <td colspan="8" class="text-center empty-state">
+                <i class="fas fa-file-invoice fa-2x mb-2 d-block muted"></i>
+                No invoices found
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- pagination -->
+      <div class="inv-pagination" *ngIf="totalPages > 1">
+        <button class="pg-btn" [disabled]="page === 1" (click)="goToPage(page - 1)">‹</button>
+        <span class="pg-info">Page {{ page }} of {{ totalPages }}</span>
+        <button class="pg-btn" [disabled]="page === totalPages" (click)="goToPage(page + 1)">›</button>
+      </div>
+    </div>
+
+    <!-- ══════════ MODAL: CREATE / EDIT / VIEW ══════════ -->
+    <div class="modal fade" id="invoiceModal" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+        <div class="modal-content inv-modal">
+
+          <!-- modal header -->
+          <div class="modal-header inv-modal-header">
+            <div>
+              <h5 class="modal-title">
+                {{ viewOnly ? 'Invoice Details' : (invoiceModel.id ? 'Edit Invoice' : 'New Invoice') }}
+              </h5>
+              <p class="modal-subtitle" *ngIf="invoiceModel.id">ID: #{{ invoiceModel.id }}</p>
+            </div>
+            <button type="button" class="inv-close" data-dismiss="modal" #closeModal (click)="backToList()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <!-- modal body -->
+          <div class="modal-body inv-modal-body">
+            <form [formGroup]="invoiceForm">
+
+              <!-- row 1: customer + dates + status -->
+              <div class="inv-form-grid">
+                <div class="inv-field">
+                  <label>Customer <span class="req">*</span></label>
+                  <select formControlName="customerid" class="inv-select">
+                    <option value="">— Select Customer —</option>
+                    <option *ngFor="let c of customers" [value]="c.id">{{ c.customer_name }}</option>
+                  </select>
+                </div>
+                <div class="inv-field">
+                  <label>Due Date</label>
+                  <input type="date" formControlName="due_date" class="inv-input">
+                </div>
+                <div class="inv-field">
+                  <label>Status</label>
+                  <select formControlName="status" class="inv-select">
+                    <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- line items -->
+              <div class="inv-section-label">Line Items</div>
+              <div class="inv-items-wrap">
+                <table class="inv-items-table">
+                  <thead>
+                    <tr>
+                      <th style="width:30%">Product</th>
+                      <th style="width:25%">Description</th>
+                      <th style="width:12%" class="text-right">Qty</th>
+                      <th style="width:15%" class="text-right">Unit Price</th>
+                      <th style="width:13%" class="text-right">Total</th>
+                      <th style="width:5%"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let line of lineItems; let li = index">
+                      <td>
+                        <select class="inv-select-sm" [(ngModel)]="line.productid" [ngModelOptions]="{standalone:true}"
+                                (change)="onProductChange(line)" [disabled]="viewOnly">
+                          <option value="">Select</option>
+                          <option *ngFor="let p of products" [value]="p.id">{{ p.pcode }} — {{ p.pname }}</option>
+                        </select>
+                      </td>
+                      <td><input class="inv-input-sm" [(ngModel)]="line.description" [ngModelOptions]="{standalone:true}" [readonly]="viewOnly"></td>
+                      <td>
+                        <input class="inv-input-sm text-right" type="number" min="1"
+                               [(ngModel)]="line.quantity" [ngModelOptions]="{standalone:true}"
+                               (input)="recalcLine(line)" [readonly]="viewOnly">
+                      </td>
+                      <td>
+                        <input class="inv-input-sm text-right" type="number" min="0"
+                               [(ngModel)]="line.unit_price" [ngModelOptions]="{standalone:true}"
+                               (input)="recalcLine(line)" [readonly]="viewOnly">
+                      </td>
+                      <td class="text-right line-total">${{ line.total | number:'1.2-2' }}</td>
+                      <td class="text-center">
+                        <button *ngIf="!viewOnly" class="rm-line" (click)="removeLine(li)" title="Remove">
+                          <fa-icon [icon]="faMinus"></fa-icon>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <button *ngIf="!viewOnly" class="inv-btn-add-line" (click)="addLine()">
+                  <fa-icon [icon]="faPlus"></fa-icon> Add Line
+                </button>
+              </div>
+
+              <!-- totals + notes -->
+              <div class="inv-footer-grid">
+                <div class="inv-notes-wrap">
+                  <label>Notes</label>
+                  <textarea formControlName="notes" class="inv-textarea" rows="3" placeholder="Payment terms, bank details…"></textarea>
+                </div>
+
+                <div class="inv-totals">
+                  <div class="inv-total-row">
+                    <span>Subtotal</span>
+                    <span>${{ subtotal | number:'1.2-2' }}</span>
+                  </div>
+                  <div class="inv-total-row">
+                    <span>Discount ($)</span>
+                    <div class="total-input-wrap" *ngIf="!viewOnly">
+                      <input type="number" min="0" formControlName="discount" class="inv-total-input">
+                    </div>
+                    <span *ngIf="viewOnly">-${{ discount | number:'1.2-2' }}</span>
+                  </div>
+                  <div class="inv-total-row">
+                    <span>Tax (%)</span>
+                    <div class="total-input-wrap" *ngIf="!viewOnly">
+                      <input type="number" min="0" max="100" formControlName="tax_percent" class="inv-total-input">
+                    </div>
+                    <span *ngIf="viewOnly">{{ taxPct }}% = ${{ taxAmt | number:'1.2-2' }}</span>
+                  </div>
+                  <div class="inv-total-row grand">
+                    <span>Total</span>
+                    <span>${{ grandTotal | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+              </div>
+
+            </form>
+          </div>
+
+          <!-- modal footer -->
+          <div class="modal-footer inv-modal-footer" *ngIf="!viewOnly">
+            <button type="button" class="inv-btn-secondary" data-dismiss="modal" (click)="backToList()">Cancel</button>
+            <button type="button" class="inv-btn-primary"
+                    (click)="invoiceModel.id ? editInvoice() : onSubmit()">
+              {{ invoiceModel.id ? 'Update Invoice' : 'Create Invoice' }}
+            </button>
+          </div>
+          <div class="modal-footer inv-modal-footer" *ngIf="viewOnly">
+            <button type="button" class="inv-btn-pdf"
+                    (click)="downloadPDF(invoiceModel.id, invoiceModel.invoice_number || 'invoice')">
+              <fa-icon [icon]="faPdf"></fa-icon> Download PDF
+            </button>
+            <button type="button" class="inv-btn-secondary" data-dismiss="modal" (click)="backToList()">Close</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -78,6 +78,13 @@
           </a>
         </li>
 
+        <li class="nav-item" *ngIf="authService.hasPermission('invoices', 'view')">
+          <a routerLink="/inventory/invoice" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-file-invoice-dollar"></i></span>
+            <p>Invoices</p>
+          </a>
+        </li>
+
         <li class="nav-header custom-header"><span>PEOPLE</span></li>
 
         <li class="nav-item" *ngIf="authService.hasPermission('vendors', 'view')">
