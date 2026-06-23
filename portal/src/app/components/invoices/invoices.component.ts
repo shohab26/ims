@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { faPenToSquare, faTrash, faEye, faFilePdf, faPlus, faMinus } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faEye, faFilePdf, faPlus, faMinus, faTrashRestore, faList, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import { Invoice, InvoiceItem, Customer, Product } from '../../model/inventory.model';
 import { ProductService } from '../../services/product.service';
 import { ToastService } from '../../services/toast.service';
@@ -13,11 +13,13 @@ export class InvoicesComponent implements OnInit {
   title = 'Invoices'; title2 = 'Invoice Form';
   menuType = true; viewOnly = false;
   faTrash = faTrash; faEdit = faPenToSquare; faEye = faEye; faPdf = faFilePdf; faPlus = faPlus; faMinus = faMinus;
+  faTrashRestore = faTrashRestore; faList = faList; faTrashAlt = faTrashAlt;
 
   invoices: Invoice[] = []; customers: Customer[] = []; products: Product[] = [];
   invoiceForm!: FormGroup; invoiceModel: Invoice = new Invoice();
   lineItems: InvoiceItem[] = [];
   searchKeyword = ''; page = 1; totalPages = 1;
+  activeTab: 'active' | 'trash' = 'active';
 
   readonly statuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
 
@@ -45,8 +47,17 @@ export class InvoicesComponent implements OnInit {
     obs.subscribe({ next: r => { this.invoices = r.data; this.totalPages = r.totalPages; } });
   }
 
+  loadTrash() {
+    this.svc.findTrashInvoice(this.page).subscribe({ next: r => { this.invoices = r.data; this.totalPages = r.totalPages; } });
+  }
+
+  switchTab(tab: 'active' | 'trash') {
+    this.activeTab = tab; this.page = 1;
+    if (tab === 'active') this.load(); else this.loadTrash();
+  }
+
   onSearch(v: string) { this.searchKeyword = v; this.page = 1; this.load(); }
-  goToPage(p: number) { if (p >= 1 && p <= this.totalPages) { this.page = p; this.load(); } }
+  goToPage(p: number) { if (p >= 1 && p <= this.totalPages) { this.page = p; this.activeTab === 'active' ? this.load() : this.loadTrash(); } }
 
   // ── Line items ──────────────────────────────────────────────
   addLine() { this.lineItems.push(new InvoiceItem()); }
@@ -118,8 +129,15 @@ export class InvoicesComponent implements OnInit {
 
   deleteInvoice(id: number) {
     this.svc.deleteInvoice(id).subscribe({
-      next: () => { this.toast.show('Invoice deleted.', 'warning'); this.load(); },
+      next: () => { this.toast.show('Invoice moved to trash.', 'warning'); this.switchTab(this.activeTab); },
       error: () => this.toast.show('Delete failed.', 'error')
+    });
+  }
+
+  restoreInvoice(id: number) {
+    this.svc.restoreInvoice(id).subscribe({
+      next: () => { this.toast.show('Invoice restored.', 'success'); this.loadTrash(); },
+      error: () => this.toast.show('Restore failed.', 'error')
     });
   }
 

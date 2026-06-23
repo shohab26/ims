@@ -1,6 +1,6 @@
 import { AuthService } from '../../services/auth.service';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { faPenToSquare, faTrash, faEye } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faEye, faTrashRestore, faList, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import { Category, Product } from '../../model/inventory.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
@@ -10,10 +10,11 @@ import { ToastService } from '../../services/toast.service';
 export class ProductsComponent implements OnInit {
   @ViewChild('closeModal') closeModal!: ElementRef;
   title = 'Products List'; title2 = 'Product Entry Form'; menuType = true;
-  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye;
+  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye; faTrashRestore = faTrashRestore; faList = faList; faTrashAlt = faTrashAlt;
   product: Product[] = []; cate: Category[] = []; productForm!: FormGroup; productModel: Product = new Product();
   searchKeyword = ''; page = 1; totalPages = 1;
   viewOnly = false;
+  activeTab: 'active' | 'trash' = 'active';
 
   constructor(public authService: AuthService, private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
 
@@ -28,11 +29,24 @@ export class ProductsComponent implements OnInit {
     obs.subscribe({ next: r => { this.product = r.data; this.totalPages = r.totalPages; }, error: e => console.log(e) });
   }
 
+  loadTrash() {
+    this.service.findTrashProduct(this.page).subscribe({ next: r => { this.product = r.data; this.totalPages = r.totalPages; }, error: e => console.log(e) });
+  }
+
+  switchTab(tab: 'active' | 'trash') {
+    this.activeTab = tab; this.page = 1;
+    if (tab === 'active') this.load(); else this.loadTrash();
+  }
+
   onSearch(v: string) { this.searchKeyword = v; this.page = 1; this.load(); }
-  goToPage(p: number) { if (p >= 1 && p <= this.totalPages) { this.page = p; this.load(); } }
+  goToPage(p: number) { if (p >= 1 && p <= this.totalPages) { this.page = p; this.activeTab === 'active' ? this.load() : this.loadTrash(); } }
 
   deleteProduct(id: number) {
-    this.service.deleteProduct(id).subscribe({ next: () => { this.toast.show('Product deleted.', 'warning'); this.load(); }, error: () => this.toast.show('Delete failed.', 'error') });
+    this.service.deleteProduct(id).subscribe({ next: () => { this.toast.show('Product moved to trash.', 'warning'); this.switchTab(this.activeTab); }, error: () => this.toast.show('Delete failed.', 'error') });
+  }
+
+  restoreProduct(id: number) {
+    this.service.restoreProduct(id).subscribe({ next: () => { this.toast.show('Product restored.', 'success'); this.loadTrash(); }, error: () => this.toast.show('Restore failed.', 'error') });
   }
 
   viewProduct(row: any) {

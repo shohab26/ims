@@ -1,6 +1,6 @@
 import { AuthService } from '../../services/auth.service';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { faPenToSquare, faTrash, faEye } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faEye, faTrashRestore, faList, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import { Status } from '../../model/inventory.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
@@ -10,10 +10,11 @@ import { ToastService } from '../../services/toast.service';
 export class StatusComponent implements OnInit {
   @ViewChild('closeModal') closeModal!: ElementRef;
   title = 'Status List'; title2 = 'Status Entry Form'; menuType = true;
-  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye;
+  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye; faTrashRestore = faTrashRestore; faList = faList; faTrashAlt = faTrashAlt;
   status: Status[] = []; statusForm!: FormGroup; statusModel: Status = new Status();
   searchKeyword = ''; page = 1; totalPages = 1;
   viewOnly = false;
+  activeTab: 'active' | 'trash' = 'active';
 
   constructor(public authService: AuthService, private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
 
@@ -24,11 +25,24 @@ export class StatusComponent implements OnInit {
     obs.subscribe({ next: r => { this.status = r.data; this.totalPages = r.totalPages; }, error: e => console.log(e) });
   }
 
+  loadTrash() {
+    this.service.findTrashStatus(this.page).subscribe({ next: r => { this.status = r.data; this.totalPages = r.totalPages; }, error: e => console.log(e) });
+  }
+
+  switchTab(tab: 'active' | 'trash') {
+    this.activeTab = tab; this.page = 1;
+    if (tab === 'active') this.load(); else this.loadTrash();
+  }
+
   onSearch(v: string) { this.searchKeyword = v; this.page = 1; this.load(); }
-  goToPage(p: number) { if (p >= 1 && p <= this.totalPages) { this.page = p; this.load(); } }
+  goToPage(p: number) { if (p >= 1 && p <= this.totalPages) { this.page = p; this.activeTab === 'active' ? this.load() : this.loadTrash(); } }
 
   deleteStatus(id: number) {
-    this.service.deleteStatus(id).subscribe({ next: () => { this.toast.show('Status deleted.', 'warning'); this.load(); }, error: () => this.toast.show('Delete failed.', 'error') });
+    this.service.deleteStatus(id).subscribe({ next: () => { this.toast.show('Status moved to trash.', 'warning'); this.switchTab(this.activeTab); }, error: () => this.toast.show('Delete failed.', 'error') });
+  }
+
+  restoreStatus(id: number) {
+    this.service.restoreStatus(id).subscribe({ next: () => { this.toast.show('Status restored.', 'success'); this.loadTrash(); }, error: () => this.toast.show('Restore failed.', 'error') });
   }
 
   viewStatus(row: any) {

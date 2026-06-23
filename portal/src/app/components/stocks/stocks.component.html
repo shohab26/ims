@@ -9,64 +9,107 @@
     </div>
 
     <div class="mt-3">
-        <input type="text" class="form-control mb-2" placeholder="Search stocks..." (keyup)="onSearch($any($event.target).value)">
-        <table class="table table-striped text-center">
-            <thead>
-                <tr>
-                    <th scope="col">SI</th>
-                    <th scope="col">Id</th>
-                    <th scope="col">Product Code</th>
-                    <th scope="col">Quantiy</th>
-                    <th scope="col">Warehouse</th>
-                    <th scope="col">Update Date</th>
-                    <th scope="col">Action</th>
+        <ul class="nav nav-pills mb-3">
+            <li class="nav-item">
+                <a class="nav-link" [class.active]="activeTab==='active'" (click)="switchTab('active')" style="cursor:pointer">
+                    <fa-icon [icon]="faList" class="mr-1"></fa-icon> Active
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" [class.active]="activeTab==='trash'" (click)="switchTab('trash')" style="cursor:pointer">
+                    <fa-icon [icon]="faTrashAlt" class="mr-1"></fa-icon> Trash
+                </a>
+            </li>
+        </ul>
 
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let row of stock; index as i">
-                    <td>{{i+1}}</td>
-                    <td>{{row.id}}</td>
-                    <td>{{filterProductData(row.productid)}}</td>
-                    <!-- <td>
-                        <span [ngSwitch]="row.productid">
-                            <span *ngSwitchCase="1">PMSI</span>
-                            <span *ngSwitchCase="2">PGIG</span>
-                            <span *ngSwitchCase="3">PASUS</span>
-                            <span *ngSwitchCase="4">PSHIB</span>
-                            <span *ngSwitchCase="5">PWEST</span>
-                            <span *ngSwitchCase="6">PSEA</span>
-                            <span *ngSwitchCase="9">PTE</span>
-                            <span *ngSwitchDefault="">{{row.productid}}</span>
-                        </span>
-                    </td> -->
-                    <td>{{row.quantity}}</td>
-                    <td>
-                        <span [ngSwitch]="row.warehouseid">
-                            <span *ngSwitchCase="1">Dhaka Warehouse</span>
-                            <span *ngSwitchCase="2">Rajshahi Warehouse</span>
-                            <span *ngSwitchCase="3">Chittagong Warehouse</span>
-                    
-                            <span *ngSwitchDefault="">{{row.warehouseid}}</span>
-                        </span>
-                    </td>
-                    <td>{{row.updatedate | date:'medium'}}</td>
-                    <td>
-                        <div class="btn-group">
-                            <a class="btn" (click)="viewStock(row)" data-toggle="modal" data-target="#exampleModal">
-                                <fa-icon [icon]="faeye" style="color: #17a2b8;"></fa-icon></a>
-                            <a class="btn" (click)="onEditById(row)" data-toggle="modal" data-target="#exampleModal" *ngIf="authService.hasPermission('stocks', 'update')">
-                                <fa-icon [icon]="editicon" style="color: #5c34d5;"></fa-icon></a>
+        <ng-container *ngIf="activeTab==='active'">
+            <input type="text" class="form-control mb-2" placeholder="Search stocks..." (keyup)="onSearch($any($event.target).value)">
+            <table class="table table-striped text-center">
+                <thead>
+                    <tr>
+                        <th scope="col">SI</th>
+                        <th scope="col">Id</th>
+                        <th scope="col">Product Code</th>
+                        <th scope="col">Quantiy</th>
+                        <th scope="col">Warehouse</th>
+                        <th scope="col">Update Date</th>
+                        <th scope="col">Action</th>
 
-                            <a class="btn" (click)="deleteStock(row.id)" *ngIf="authService.hasPermission('stocks', 'delete')">
-                                <fa-icon [icon]="fatrash" style="color: #d53449;"></fa-icon></a>
-                        </div>
-                    </td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of stock; index as i">
+                        <td>{{i+1}}</td>
+                        <td>{{row.id}}</td>
+                        <td>{{filterProductData(row.productid)}}</td>
+                        <td>{{row.quantity}}</td>
+                        <td>
+                            <span [ngSwitch]="row.warehouseid">
+                                <span *ngSwitchCase="1">Dhaka Warehouse</span>
+                                <span *ngSwitchCase="2">Rajshahi Warehouse</span>
+                                <span *ngSwitchCase="3">Chittagong Warehouse</span>
 
-                </tr>
+                                <span *ngSwitchDefault="">{{row.warehouseid}}</span>
+                            </span>
+                        </td>
+                        <td>{{row.updatedate | date:'medium'}}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a class="btn" (click)="viewStock(row)" data-toggle="modal" data-target="#exampleModal">
+                                    <fa-icon [icon]="faeye" style="color: #17a2b8;"></fa-icon></a>
+                                <a class="btn" (click)="onEditById(row)" data-toggle="modal" data-target="#exampleModal" *ngIf="authService.hasPermission('stocks', 'update')">
+                                    <fa-icon [icon]="editicon" style="color: #5c34d5;"></fa-icon></a>
 
-            </tbody>
-        </table>
+                                <a class="btn" (click)="deleteStock(row.id)" *ngIf="authService.hasPermission('stocks', 'delete')">
+                                    <fa-icon [icon]="fatrash" style="color: #d53449;"></fa-icon></a>
+                            </div>
+                        </td>
+
+                    </tr>
+
+                </tbody>
+            </table>
+        </ng-container>
+
+        <ng-container *ngIf="activeTab==='trash'">
+            <table class="table table-striped text-center">
+                <thead>
+                    <tr>
+                        <th scope="col">SI</th>
+                        <th scope="col">Product Code</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Warehouse</th>
+                        <th scope="col">Deleted At</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of stock; index as i">
+                        <td>{{i+1}}</td>
+                        <td>{{filterProductData(row.productid)}}</td>
+                        <td>{{row.quantity}}</td>
+                        <td>
+                            <span [ngSwitch]="row.warehouseid">
+                                <span *ngSwitchCase="1">Dhaka Warehouse</span>
+                                <span *ngSwitchCase="2">Rajshahi Warehouse</span>
+                                <span *ngSwitchCase="3">Chittagong Warehouse</span>
+                                <span *ngSwitchDefault="">{{row.warehouseid}}</span>
+                            </span>
+                        </td>
+                        <td class="muted">{{row.deleted_at | date:'medium'}}</td>
+                        <td>
+                            <a class="btn" (click)="restoreStock(row.id)" *ngIf="authService.isSuperAdmin()" title="Restore">
+                                <fa-icon [icon]="faTrashRestore" style="color: #28a745;"></fa-icon>
+                            </a>
+                        </td>
+                    </tr>
+                    <tr *ngIf="!stock.length">
+                        <td colspan="6" class="text-center muted">No items in trash.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </ng-container>
+
         <nav *ngIf="totalPages > 1">
             <ul class="pagination pagination-sm justify-content-end mb-0">
                 <li class="page-item" [class.disabled]="page === 1"><a class="page-link" (click)="goToPage(page-1)">«</a></li>

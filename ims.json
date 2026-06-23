@@ -1,0 +1,363 @@
+{
+  "session": {
+    "saved_at": "2026-06-21",
+    "project_name": "InvenTrack — Inventory Management System",
+    "branch": "shohab",
+    "purpose": "Session snapshot: project context, Upwork profile content, and full gap-analysis roadmap"
+  },
+
+  "project_overview": {
+    "type": "Full-Stack Inventory Management System (IMS)",
+    "stack": {
+      "frontend": "Angular 17.3 (standalone components, routing, guards, HTTP interceptor, ng2-charts, Bootstrap 5, FontAwesome)",
+      "backend": "Node.js + Express (JWT, bcryptjs, nodemailer, pdfkit, pg)",
+      "database": "PostgreSQL on Supabase (pooler: aws-1-ap-northeast-2.pooler.supabase.com)",
+      "backend_port": 3001,
+      "frontend_port": 4200
+    },
+    "layout": {
+      "api/": "Node/Express backend (controllers, routes, middleware, services, migrations, seed scripts)",
+      "portal/": "Angular 17 frontend (components, template, guards, interceptors, services, models)",
+      "db/": "PostgreSQL dumps (dump-inventory_db-202606020032.sql, inv.sql)"
+    }
+  },
+
+  "what_you_have": {
+    "auth": [
+      "JWT-based authentication (8h expiry)",
+      "bcrypt password hashing",
+      "First-login OTP via Gmail SMTP (Nodemailer)",
+      "OTP hash + 10-min expiry stored on user record",
+      "Password-change endpoint that prevents re-use of old password"
+    ],
+    "rbac": [
+      "Roles + Users tables",
+      "Modules + role_permissions tables (granular can_view / can_create / can_update / can_delete)",
+      "Super-admin bypass",
+      "HTTP method → permission column mapping in middleware",
+      "Permission guard on Angular routes; role guard for admin pages",
+      "JWT payload carries role_name + role_id; frontend stores permissions in localStorage"
+    ],
+    "reference_data": [
+      "Categories, Warehouses, Statuses (paginated CRUD + keyword search)"
+    ],
+    "entities": [
+      "Products, Vendors, Customers (paginated CRUD + keyword search)"
+    ],
+    "stock_ops": [
+      "Stocks table",
+      "Order save auto-increments stock (services/stockupdate.js saveStock)",
+      "Delivery save auto-decrements stock (services/stockupdate.js decreaseStock)",
+      "Latest orders, total sales endpoints for dashboard"
+    ],
+    "billing": [
+      "invoices + invoice_items tables",
+      "Per-line subtotal / discount / tax / total math",
+      "Transactional save + update (BEGIN / COMMIT / ROLLBACK)",
+      "Server-side PDF generation with PDFKit (branded A4 invoice, status badges, totals block)",
+      "Statuses: draft | sent | paid | overdue | cancelled"
+    ],
+    "dashboard": [
+      "ng2-charts KPIs (latest orders, total sales)"
+    ],
+    "admin_ui": [
+      "Roles management screen (CRUD)",
+      "Users management screen (CRUD with role assignment)",
+      "Permission matrix editor (can_view / create / update / delete per module)"
+    ],
+    "engineering": [
+      "Paginated search endpoints (utils/pagination.js, MAX_LIMIT 100)",
+      "SQL migration files (auth_rbac, permissions, invoices, user_first_login_otp)",
+      "Super-admin seed script (admin@inventory.com / Admin@1234)",
+      "Custom HTTP interceptor adds Authorization: Bearer header"
+    ]
+  },
+
+  "upwork_profile": {
+    "project_title_70_chars": "Full-Stack Inventory Management System with RBAC, Invoicing & PDF",
+    "role_100_chars": "Full-Stack Developer — Angular 17 frontend, Node.js/Express API, PostgreSQL",
+    "description_600_chars": "Designed and built a complete Inventory Management System (InvenTrack) from scratch. Frontend is Angular 17 (standalone components, lazy routing, RBAC guards, HTTP interceptor); backend is a Node.js/Express REST API on PostgreSQL (Supabase) using JWT auth, bcrypt, role-based permissions, and nodemailer.\n\nCore modules: Products, Categories, Warehouses, Vendors, Customers, Stocks, Purchase Orders, Deliveries, and Invoices — each with paginated CRUD and keyword search. Orders auto-increase stock, deliveries auto-decrease it.\n\nKey features I delivered:\n• Granular RBAC: roles, modules, per-module view/create/update/delete permissions, super-admin bypass\n• Auth flow with first-login OTP via Gmail SMTP (bcrypt-hashed, 10-min expiry)\n• Invoice builder with subtotal/discount/tax/total math and server-side PDFKit generation (branded A4 invoice)\n• Dashboard charts (ng2-charts) for orders/deliveries KPIs\n• Secure transactions (BEGIN/COMMIT/ROLLBACK) for invoice line items\n• Schema migrations, seed script, and reference-data pagination utils\n\nResult: a production-grade, multi-tenant-ready system replacing manual spreadsheet tracking.",
+    "skills_to_tag": [
+      "Angular",
+      "Angular 17",
+      "Node.js",
+      "Express.js",
+      "PostgreSQL",
+      "Supabase",
+      "REST API",
+      "JWT Authentication",
+      "Role-Based Access Control (RBAC)",
+      "Full-Stack Development",
+      "CRUD Applications",
+      "PDF Generation (PDFKit)",
+      "Email Integration / SMTP (Nodemailer)",
+      "Bootstrap 5",
+      "Chart.js / ng2-charts",
+      "TypeScript",
+      "Database Schema Design",
+      "Migration Scripts",
+      "Data Modeling"
+    ],
+    "deliverables": [
+      "Responsive Angular admin dashboard",
+      "JWT authentication & OTP-based first-login password setup",
+      "Granular role/permission management UI",
+      "CRUD modules for products, categories, warehouses, vendors, customers, stocks, orders, deliveries, invoices",
+      "Auto stock-level adjustment on orders/deliveries",
+      "Invoice builder with discount/tax and branded PDF export",
+      "Dashboard with KPI charts",
+      "PostgreSQL schema with migration scripts",
+      "Paginated search endpoints"
+    ],
+    "recommended_screenshot_order": [
+      "1. Login page",
+      "2. OTP / password change screen",
+      "3. Dashboard with charts",
+      "4. Products list (pagination + search)",
+      "5. Invoice list + Invoice builder form",
+      "6. Invoice PDF preview (downloaded PDF opened)",
+      "7. Roles management + Permissions matrix",
+      "8. Users management",
+      "9. Orders and Delivery screens",
+      "10. Sidebar navigation showing all modules"
+    ],
+    "phrases_to_emphasize": [
+      "JWT authentication with first-login OTP via Gmail SMTP",
+      "Granular role-based access control (view/create/update/delete per module)",
+      "Server-side PDF generation with PDFKit",
+      "Auto stock-level adjustments on purchase orders and deliveries",
+      "Transactional PostgreSQL writes (BEGIN/COMMIT/ROLLBACK) for invoice line items",
+      "Schema migrations and seed scripts",
+      "Standalone Angular components, route guards, HTTP interceptor"
+    ],
+    "future_link_strategy": "Add a Loom / YouTube walkthrough — best 60s: login → dashboard charts → create invoice → download PDF"
+  },
+
+  "gap_analysis": {
+    "phase_1_critical_must_have": [
+      {
+        "feature": "Soft delete (audit trail)",
+        "details": "Add is_deleted, deleted_at, deleted_by columns; replace DELETE with flag updates; add Trash view + Restore"
+      },
+      {
+        "feature": "Backend input validation",
+        "details": "Add express-validator or Joi: email format, required fields, numeric ranges, password strength, SKU uniqueness"
+      },
+      {
+        "feature": "Activity log / audit trail",
+        "details": "New table: activity_logs(id, user_id, action, entity_type, entity_id, old_data, new_data, ip, created_at). Middleware logs every POST/PATCH/DELETE."
+      },
+      {
+        "feature": "Stock movement history",
+        "details": "New table: stock_movements(id, productid, warehouseid, change, reason, ref_type, ref_id, created_by, createdate). Order=+qty, Delivery=-qty, Manual, Return."
+      },
+      {
+        "feature": "Database indexes",
+        "details": "Migration: CREATE INDEX on products(pcode), stocks(productid), invoices(customerid), invoices(status), invoice_items(invoiceid)"
+      },
+      {
+        "feature": "Invoice number sequence",
+        "details": "Replace INV-${Date.now()} with a sequence table or PostgreSQL SEQUENCE; per-year reset e.g. INV-2026-000123"
+      },
+      {
+        "feature": "Email the invoice",
+        "details": "Add 'Send invoice by email' button that attaches the generated PDF (Nodemailer already configured)"
+      },
+      {
+        "feature": "Print / inline PDF preview",
+        "details": "Add in-browser print stylesheet + route that opens PDF inline instead of forcing download"
+      }
+    ],
+
+    "phase_2_business_logic": [
+      {
+        "feature": "Purchase Order state machine",
+        "details": "draft → sent → partial → received → cancelled with transition buttons + audit"
+      },
+      {
+        "feature": "Delivery / Shipment workflow",
+        "details": "pending → packed → shipped → delivered → returned, with tracking number, carrier, shipping address"
+      },
+      {
+        "feature": "Payment recording for invoices",
+        "details": "New table payments(id, invoice_id, amount, method, transaction_id, paid_at, note). Auto-update invoice.status to paid when sum >= total."
+      },
+      {
+        "feature": "Returns / Refunds",
+        "details": "New table returns(id, delivery_id, productid, qty, reason, status, createdate). Restock with stock_movement reason=return."
+      },
+      {
+        "feature": "Multi-warehouse stock transfer",
+        "details": "stock_transfers(id, from_warehouse, to_warehouse, productid, qty, status, createdate) with approval flow"
+      },
+      {
+        "feature": "Low-stock alerts",
+        "details": "Dashboard widget + email when quantity < reorder_level. Add products.reorder_level INT."
+      },
+      {
+        "feature": "Product variants / units / batches",
+        "details": "units, unit_conversions, product_batches with expiry dates (pharma/food)"
+      },
+      {
+        "feature": "Supplier performance & customer credit",
+        "details": "Avg delivery time per vendor; outstanding balance + credit limit per customer"
+      }
+    ],
+
+    "phase_3_reporting_analytics": [
+      {
+        "feature": "Reports module",
+        "details": "Sales, Purchase, Stock valuation, P&L, Top products, Dead stock — with PDF / Excel / CSV export"
+      },
+      {
+        "feature": "Dashboard v2",
+        "details": "Revenue chart (12 mo), inventory value, low-stock list, pending orders, overdue invoices, top 5 customers/products"
+      },
+      {
+        "feature": "Date-range filters",
+        "details": "from_date / to_date filtering on every list page, not just keyword search"
+      }
+    ],
+
+    "phase_4_engineering_devops": [
+      {
+        "feature": "Centralized error-handling middleware",
+        "details": "Replace per-controller try/catch with a single error handler"
+      },
+      {
+        "feature": "Request validation schemas",
+        "details": "Use zod or Joi with one schema per endpoint"
+      },
+      {
+        "feature": "API documentation (Swagger / OpenAPI)",
+        "details": "Add swagger-ui-express — major selling point"
+      },
+      {
+        "feature": "Unit + integration tests",
+        "details": "Backend: Jest/vitest. Frontend: fill in the existing Karma stubs"
+      },
+      {
+        "feature": "CI/CD pipeline",
+        "details": "GitHub Actions: lint → test → build → deploy (Vercel + Render/Railway)"
+      },
+      {
+        "feature": "Environment configuration",
+        "details": "Move hardcoded localhost:3001 into Angular environment.ts"
+      },
+      {
+        "feature": "Refresh tokens",
+        "details": "Add refresh-token rotation for the 8h JWT"
+      },
+      {
+        "feature": "Rate limiting + Helmet",
+        "details": "express-rate-limit + helmet middleware"
+      },
+      {
+        "feature": "Centralized logging",
+        "details": "Winston / Pino with log levels and request IDs"
+      }
+    ],
+
+    "phase_5_ux_polish": [
+      {
+        "feature": "Bulk operations",
+        "details": "Bulk delete, bulk status update, CSV import, Excel export"
+      },
+      {
+        "feature": "Product image upload",
+        "details": "products.image_url + Multer + Supabase Storage or local uploads/"
+      },
+      {
+        "feature": "Global search (Cmd+K)",
+        "details": "Search across products, customers, vendors, invoices from one bar"
+      },
+      {
+        "feature": "Notifications",
+        "details": "Bell icon + unread count + push: low stock, new order, invoice overdue"
+      },
+      {
+        "feature": "Profile settings page",
+        "details": "Change own password, edit name/email, view login history"
+      },
+      {
+        "feature": "Multi-language + dark mode",
+        "details": "i18n with @ngx-translate/core; theme switcher"
+      },
+      {
+        "feature": "Barcode / QR generation",
+        "details": "bwip-js or jsbarcode — print product barcodes"
+      },
+      {
+        "feature": "Improved forms",
+        "details": "Reactive Forms with cross-field validation, date pickers, confirm dialogs, loading skeletons"
+      }
+    ],
+
+    "phase_6_advanced_future": [
+      {
+        "feature": "Real-time updates (WebSockets)",
+        "details": "socket.io — dashboards see new stock counts without refresh"
+      },
+      {
+        "feature": "Email templates",
+        "details": "mjml or handlebars for invoice, order confirmation, low-stock emails"
+      },
+      {
+        "feature": "Multi-currency & multi-tax",
+        "details": "currencies table, per-customer preferred currency, regional tax rules"
+      },
+      {
+        "feature": "Multi-tenant SaaS",
+        "details": "tenants table; every row gets tenant_id; one DB, many companies"
+      },
+      {
+        "feature": "Mobile app",
+        "details": "Ionic / React Native reusing the REST API; warehouse barcode scanning"
+      },
+      {
+        "feature": "AI features",
+        "details": "Demand forecasting, anomaly detection, auto-categorize new products"
+      }
+    ],
+
+    "recommended_8_week_build_order": [
+      {"week": 1, "build": "Input validation + DB indexes + Soft delete", "effort": "Low", "impact": "High"},
+      {"week": 2, "build": "Audit log + Stock movement history", "effort": "Medium", "impact": "High"},
+      {"week": 3, "build": "Payment recording + Invoice status automation", "effort": "Medium", "impact": "High"},
+      {"week": 4, "build": "Returns module + Low-stock alerts", "effort": "Medium", "impact": "High"},
+      {"week": 5, "build": "Reports module (sales, stock valuation)", "effort": "High", "impact": "High"},
+      {"week": 6, "build": "Dashboard v2 with date filters", "effort": "Medium", "impact": "High"},
+      {"week": 7, "build": "Swagger docs + Centralized error handling", "effort": "Low", "impact": "Medium"},
+      {"week": 8, "build": "Product images + Bulk CSV import/export", "effort": "Medium", "impact": "High"}
+    ],
+
+    "senior_signals_to_call_out": [
+      "Audit logs",
+      "Stock movement history",
+      "Soft deletes with restore",
+      "State machines (PO/Delivery/Invoice workflows)",
+      "Reports module with PDF/Excel export",
+      "Swagger documentation",
+      "WebSockets real-time",
+      "Multi-tenant data isolation"
+    ]
+  },
+
+  "key_file_paths": {
+    "backend_entry": "api/index.js, api/server.js",
+    "db_connection": "api/connection.js",
+    "auth": "api/controller/authController.js, api/middleware/auth.middleware.js, api/services/passwordSetupService.js, api/services/emailService.js",
+    "rbac": "api/controller/roleController.js, api/controller/userController.js, api/controller/permissionController.js, api/migration_auth_rbac.sql, api/migration_permissions.sql, api/migration_user_first_login_otp.sql",
+    "billing": "api/controller/invoiceController.js (PDFKit export), api/migration_invoices.sql",
+    "stock_logic": "api/services/stockupdate.js, api/controller/orderController.js, api/controller/deliveryController.js",
+    "schema": "api/schema.sql",
+    "seed": "api/seed_superadmin.js, api/insert_dashboard_module.js",
+    "pagination": "api/utils/pagination.js",
+    "frontend_entry": "portal/src/app/app.module.ts, portal/src/app/app-routing.module.ts",
+    "frontend_routes": "portal/src/app/app-routing.module.ts (authGuard, permissionGuard, roleGuard)",
+    "frontend_auth": "portal/src/app/services/auth.service.ts, portal/src/app/interceptors/auth.interceptor.ts",
+    "frontend_admin": "portal/src/app/services/admin.service.ts, portal/src/app/components/roles/, portal/src/app/components/users-management/",
+    "frontend_models": "portal/src/app/model/inventory.model.ts",
+    "frontend_api_client": "portal/src/app/services/product.service.ts (covers every module)"
+  }
+}

@@ -9,40 +9,86 @@
     </div>
 
     <div class="mt-3">
-        <input type="text" class="form-control mb-3" placeholder="Search categories..." (keyup)="onSearch($any($event.target).value)">
-        <table class="table table-striped text-center">
-            <thead>
-                <tr>
-                    <th scope="col">SI</th>
-                    <th scope="col">Id</th>
-                    <th scope="col">Category</th>
-                    <th scope="col">Action</th>
+        <ul class="nav nav-pills mb-3">
+            <li class="nav-item">
+                <a class="nav-link" [class.active]="activeTab==='active'" (click)="switchTab('active')" style="cursor:pointer">
+                    <fa-icon [icon]="faList" class="mr-1"></fa-icon> Active
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" [class.active]="activeTab==='trash'" (click)="switchTab('trash')" style="cursor:pointer">
+                    <fa-icon [icon]="faTrashAlt" class="mr-1"></fa-icon> Trash
+                </a>
+            </li>
+        </ul>
 
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let row of cate; index as i">
-                    <td>{{i+1}}</td>
-                    <td>{{row.id}}</td>
-                    <td>{{row.cname}}</td>
-                    <td>
+        <ng-container *ngIf="activeTab==='active'">
+            <input type="text" class="form-control mb-3" placeholder="Search categories..." (keyup)="onSearch($any($event.target).value)">
+            <table class="table table-striped text-center">
+                <thead>
+                    <tr>
+                        <th scope="col">SI</th>
+                        <th scope="col">Id</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Action</th>
 
-                        <div class="btn-group">
-                            <a class="btn" (click)="viewCategory(row)" data-toggle="modal" data-target="#exampleModal">
-                                <fa-icon [icon]="faeye" style="color: #17a2b8;"></fa-icon></a>
-                            <a class="btn" (click)="onEditById(row)" data-toggle="modal" data-target="#exampleModal" *ngIf="authService.hasPermission('categories', 'update')">
-                                <fa-icon [icon]="editicon" style="color: #5c34d5;"></fa-icon></a>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of cate; index as i">
+                        <td>{{i+1}}</td>
+                        <td>{{row.id}}</td>
+                        <td>{{row.cname}}</td>
+                        <td>
+
+                            <div class="btn-group">
+                                <a class="btn" (click)="viewCategory(row)" data-toggle="modal" data-target="#exampleModal">
+                                    <fa-icon [icon]="faeye" style="color: #17a2b8;"></fa-icon></a>
+                                <a class="btn" (click)="onEditById(row)" data-toggle="modal" data-target="#exampleModal" *ngIf="authService.hasPermission('categories', 'update')">
+                                    <fa-icon [icon]="editicon" style="color: #5c34d5;"></fa-icon></a>
 
 
-                            <a class="btn" (click)="deleteCategory(row.id)" *ngIf="authService.hasPermission('categories', 'delete')">
-                                <fa-icon [icon]="fatrash" style="color: #d53449;"></fa-icon></a>
-                        </div>
-                    </td>
+                                <a class="btn" (click)="deleteCategory(row.id)" *ngIf="authService.hasPermission('categories', 'delete')">
+                                    <fa-icon [icon]="fatrash" style="color: #d53449;"></fa-icon></a>
+                            </div>
+                        </td>
 
-                </tr>
+                    </tr>
 
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </ng-container>
+
+        <ng-container *ngIf="activeTab==='trash'">
+            <table class="table table-striped text-center">
+                <thead>
+                    <tr>
+                        <th scope="col">SI</th>
+                        <th scope="col">Id</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Deleted At</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of cate; index as i">
+                        <td>{{i+1}}</td>
+                        <td>{{row.id}}</td>
+                        <td>{{row.cname}}</td>
+                        <td class="muted">{{row.deleted_at | date:'medium'}}</td>
+                        <td>
+                            <a class="btn" (click)="restoreCategory(row.id)" *ngIf="authService.isSuperAdmin()" title="Restore">
+                                <fa-icon [icon]="faTrashRestore" style="color: #28a745;"></fa-icon>
+                            </a>
+                        </td>
+                    </tr>
+                    <tr *ngIf="!cate.length">
+                        <td colspan="5" class="text-center muted">No items in trash.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </ng-container>
+
         <nav *ngIf="totalPages > 1">
             <ul class="pagination pagination-sm justify-content-end mb-0">
                 <li class="page-item" [class.disabled]="page === 1"><a class="page-link" (click)="goToPage(page-1)">«</a></li>

@@ -33,6 +33,39 @@ const requireSuperAdmin = (req, res, next) => {
     next();
 };
 
+/**
+ * Middleware: Check that the user has can_delete on the given module.
+ *
+ * Used on POST /<module>/:id/restore routes — restore is semantically the inverse
+ * of delete, but POST maps to can_create via the standard method→column map, so
+ * we can't reuse checkPermission(moduleName) as-is. This helper ignores req.method
+ * and always checks can_delete. Super-admin bypasses, same as checkPermission.
+ */
+const requireDeletePermission = (moduleName) => {
+    return async (req, res, next) => {
+        if (req.user && req.user.role_name === 'super_admin') {
+            return next();
+        }
+        try {
+            const pool = require('../connection');
+            const result = await pool.query(
+                `SELECT rp.can_delete
+                 FROM role_permissions rp
+                 JOIN modules m ON rp.module_id = m.id
+                 WHERE rp.role_id = $1 AND m.module_name = $2`,
+                [req.user.role_id, moduleName]
+            );
+            if (result.rows.length > 0 && result.rows[0].can_delete === true) {
+                return next();
+            }
+            return res.status(403).json({ message: 'Forbidden. You do not have permission to perform this action.' });
+        } catch (err) {
+            console.error('Permission check error:', err);
+            return res.status(500).json({ message: 'Internal server error during permission check.' });
+        }
+    };
+};
+
 const permissionColumnsByMethod = Object.freeze({
     GET: 'can_view',
     POST: 'can_create',
@@ -84,4 +117,4 @@ const checkPermission = (moduleName) => {
     };
 };
 
-module.exports = { verifyToken, requireSuperAdmin, checkPermission };
+module.exports = { verifyToken, requireSuperAdmin, checkPermission, requireDeletePermission };

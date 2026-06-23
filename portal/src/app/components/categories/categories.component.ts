@@ -1,6 +1,6 @@
 import { AuthService } from '../../services/auth.service';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { faPenToSquare, faTrash, faEye } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faEye, faTrashRestore, faList, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import { Category } from '../../model/inventory.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
@@ -10,10 +10,11 @@ import { ToastService } from '../../services/toast.service';
 export class CategoriesComponent implements OnInit {
   @ViewChild('closeModal') closeModal!: ElementRef;
   title = 'Categories List'; title2 = 'Category Entry Form'; menuType = true;
-  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye;
+  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye; faTrashRestore = faTrashRestore; faList = faList; faTrashAlt = faTrashAlt;
   cate: Category[] = []; cateForm!: FormGroup; cateModel: Category = new Category();
   searchKeyword = ''; page = 1; totalPages = 1;
   viewOnly = false;
+  activeTab: 'active' | 'trash' = 'active';
 
   constructor(public authService: AuthService, private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
 
@@ -24,11 +25,24 @@ export class CategoriesComponent implements OnInit {
     obs.subscribe({ next: r => { this.cate = r.data; this.totalPages = r.totalPages; }, error: e => console.log(e) });
   }
 
+  loadTrash() {
+    this.service.findTrashCategory(this.page).subscribe({ next: r => { this.cate = r.data; this.totalPages = r.totalPages; }, error: e => console.log(e) });
+  }
+
+  switchTab(tab: 'active' | 'trash') {
+    this.activeTab = tab; this.page = 1;
+    if (tab === 'active') this.load(); else this.loadTrash();
+  }
+
   onSearch(v: string) { this.searchKeyword = v; this.page = 1; this.load(); }
-  goToPage(p: number) { if (p >= 1 && p <= this.totalPages) { this.page = p; this.load(); } }
+  goToPage(p: number) { if (p >= 1 && p <= this.totalPages) { this.page = p; this.activeTab === 'active' ? this.load() : this.loadTrash(); } }
 
   deleteCategory(id: number) {
-    this.service.deleteCategory(id).subscribe({ next: () => { this.toast.show('Category deleted.', 'warning'); this.load(); }, error: () => this.toast.show('Delete failed.', 'error') });
+    this.service.deleteCategory(id).subscribe({ next: () => { this.toast.show('Category moved to trash.', 'warning'); this.switchTab(this.activeTab); }, error: () => this.toast.show('Delete failed.', 'error') });
+  }
+
+  restoreCategory(id: number) {
+    this.service.restoreCategory(id).subscribe({ next: () => { this.toast.show('Category restored.', 'success'); this.loadTrash(); }, error: () => this.toast.show('Restore failed.', 'error') });
   }
 
   viewCategory(row: any) {

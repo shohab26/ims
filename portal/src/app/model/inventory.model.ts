@@ -14,26 +14,32 @@ export class Book {
 //book class
 // ----------------------------------------- INVENTORY ----------------------------------------
 
-//warehouses 
+//warehouses
 export class Warehouse {
     id: number = 0
     wname?: string
+    deleted_at?: string | null
+    deleted_by?: number | null
 }
-//status 
+//status
 export class Status {
     id: number = 0
     status?: string
+    deleted_at?: string | null
+    deleted_by?: number | null
 }
 
-//customers 
+//customers
 export class Customer {
     id: number = 0
     address?: string
     phone?: string
     customer_name?: string
     email?: string
+    deleted_at?: string | null
+    deleted_by?: number | null
 }
-//vendors 
+//vendors
 export class Vendor {
     id: number = 0
     address?: string
@@ -41,16 +47,20 @@ export class Vendor {
     contact_person?: string
     company?: string
     email?: string
+    deleted_at?: string | null
+    deleted_by?: number | null
 }
 
 
 
-//categories 
+//categories
 export class Category {
     id: number = 0
     cname?: string
+    deleted_at?: string | null
+    deleted_by?: number | null
 }
-//products 
+//products
 export class Product {
     id: number = 0
     pname?: string
@@ -58,16 +68,20 @@ export class Product {
     pcate?: number
     price?: number
     createdate?: Date
+    deleted_at?: string | null
+    deleted_by?: number | null
 }
-//stocks 
+//stocks
 export class Stock {
     id: number = 0
     quantity?: number
     productid?: number
     warehouseid?: number
     updatedate?: Date
+    deleted_at?: string | null
+    deleted_by?: number | null
 }
-//stocks 
+//stocks
 export class Order {
 
     id: number = 0
@@ -78,10 +92,12 @@ export class Order {
     unit_price?: number
     total_price?: number
     createdate?: Date
+    deleted_at?: string | null
+    deleted_by?: number | null
 
 
 }
-//stocks 
+//stocks
 export class Delivery {
 
     id: number = 0
@@ -93,6 +109,8 @@ export class Delivery {
     total_price?: number
     deliverydate?: Date
     createdate?: Date
+    deleted_at?: string | null
+    deleted_by?: number | null
 }
 
 // Invoice / Billing
@@ -127,4 +145,6 @@ export class Invoice {
   notes?: string;
   createdate?: Date;
   items: InvoiceItem[] = [];
+  deleted_at?: string | null;
+  deleted_by?: number | null;
 }

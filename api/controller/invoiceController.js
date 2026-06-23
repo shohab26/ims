@@ -20,8 +20,9 @@ const findAll = async (req, res) => {
         const [data, count] = await Promise.all([
             pool.query(`SELECT i.*, c.customer_name FROM invoices i
                         JOIN customers c ON c.id = i.customerid
+                        WHERE i.is_deleted = FALSE
                         ORDER BY i.id DESC LIMIT $1 OFFSET $2`, [limit, offset]),
-            pool.query('SELECT COUNT(*) FROM invoices')
+            pool.query('SELECT COUNT(*) FROM invoices WHERE is_deleted = FALSE')
         ]);
         res.json(paginate(data.rows, parseInt(count.rows[0].count), page, limit));
     } catch (err) { res.status(500).json(err); }
@@ -36,10 +37,26 @@ const findByKeyword = async (req, res) => {
         const [data, count] = await Promise.all([
             pool.query(`SELECT i.*, c.customer_name FROM invoices i
                         JOIN customers c ON c.id = i.customerid
-                        WHERE i.invoice_number ILIKE $1 OR c.customer_name ILIKE $1 OR i.status ILIKE $1
+                        WHERE i.is_deleted = FALSE
+                          AND (i.invoice_number ILIKE $1 OR c.customer_name ILIKE $1 OR i.status ILIKE $1)
                         ORDER BY i.id DESC LIMIT $2 OFFSET $3`, [like, limit, offset]),
             pool.query(`SELECT COUNT(*) FROM invoices i JOIN customers c ON c.id = i.customerid
-                        WHERE i.invoice_number ILIKE $1 OR c.customer_name ILIKE $1 OR i.status ILIKE $1`, [like])
+                        WHERE i.is_deleted = FALSE
+                          AND (i.invoice_number ILIKE $1 OR c.customer_name ILIKE $1 OR i.status ILIKE $1)`, [like])
+        ]);
+        res.json(paginate(data.rows, parseInt(count.rows[0].count), page, limit));
+    } catch (err) { res.status(500).json(err); }
+};
+
+const findDeleted = async (req, res) => {
+    const { page, limit, offset } = getPagination(req.query);
+    try {
+        const [data, count] = await Promise.all([
+            pool.query(`SELECT i.*, c.customer_name FROM invoices i
+                        JOIN customers c ON c.id = i.customerid
+                        WHERE i.is_deleted = TRUE
+                        ORDER BY i.deleted_at DESC LIMIT $1 OFFSET $2`, [limit, offset]),
+            pool.query('SELECT COUNT(*) FROM invoices WHERE is_deleted = TRUE')
         ]);
         res.json(paginate(data.rows, parseInt(count.rows[0].count), page, limit));
     } catch (err) { res.status(500).json(err); }
@@ -102,6 +119,10 @@ const updateById = async (req, res) => {
         if (!r.rowCount) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Not found.' }); }
 
         await client.query('DELETE FROM invoice_items WHERE invoiceid=$1', [req.params.id]);
+        // NOTE: The DELETE above is INTENTIONAL and remains a hard delete.
+        // It is not a user-initiated trash — it is the transactional wipe that
+        // precedes a fresh INSERT of the new line items in an invoice edit.
+        // Do not convert this to a soft delete.
         for (const item of items) {
             await client.query(
                 `INSERT INTO invoice_items(invoiceid,productid,description,quantity,unit_price,total)
@@ -115,11 +136,49 @@ const updateById = async (req, res) => {
 };
 
 const deleteById = async (req, res) => {
+    // Soft-delete the parent invoice and ALL its line items in one transaction.
+    // The line items follow the parent — without this, itemsOf() for a trashed
+    // invoice would return empty items, which would break the trash preview.
+    const client = await pool.connect();
     try {
-        const r = await pool.query('DELETE FROM invoices WHERE id=$1', [req.params.id]);
-        if (!r.rowCount) return res.status(404).json({ message: 'Not found.' });
+        await client.query('BEGIN');
+        await client.query(
+            `UPDATE invoice_items SET is_deleted=TRUE, deleted_at=NOW(), deleted_by=$2
+             WHERE invoiceid=$1 AND is_deleted=FALSE`,
+            [req.params.id, req.user.id]
+        );
+        const r = await client.query(
+            `UPDATE invoices SET is_deleted=TRUE, deleted_at=NOW(), deleted_by=$2
+             WHERE id=$1 AND is_deleted=FALSE`,
+            [req.params.id, req.user.id]
+        );
+        if (!r.rowCount) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Not found.' }); }
+        await client.query('COMMIT');
         res.json({ message: 'Invoice deleted.' });
-    } catch (err) { res.status(500).json(err); }
+    } catch (err) { await client.query('ROLLBACK'); res.status(500).json(err); }
+    finally { client.release(); }
+};
+
+const restoreById = async (req, res) => {
+    // Mirror image of deleteById: bring back parent + all line items in one TX.
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        await client.query(
+            `UPDATE invoice_items SET is_deleted=FALSE, deleted_at=NULL, deleted_by=NULL
+             WHERE invoiceid=$1 AND is_deleted=TRUE`,
+            [req.params.id]
+        );
+        const r = await client.query(
+            `UPDATE invoices SET is_deleted=FALSE, deleted_at=NULL, deleted_by=NULL
+             WHERE id=$1 AND is_deleted=TRUE`,
+            [req.params.id]
+        );
+        if (!r.rowCount) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Not found or not deleted.' }); }
+        await client.query('COMMIT');
+        res.json({ message: 'Invoice restored.' });
+    } catch (err) { await client.query('ROLLBACK'); res.status(500).json(err); }
+    finally { client.release(); }
 };
 
 // ── PDF Download ─────────────────────────────────────────────────
@@ -243,4 +302,4 @@ const downloadPDF = async (req, res) => {
     } catch (err) { res.status(500).json(err); }
 };
 
-module.exports = { findAll, findByKeyword, findById, save, updateById, deleteById, downloadPDF };
+module.exports = { findAll, findByKeyword, findById, save, updateById, deleteById, restoreById, findDeleted, downloadPDF };
