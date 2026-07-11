@@ -153,7 +153,9 @@
 .act-btn.view { background: #eff6ff; color: #3b82f6; }
 .act-btn.edit { background: #fff7ed; color: #f59e0b; }
 .act-btn.pdf  { background: #fef2f2; color: #ef4444; }
+.act-btn.send { background: #f0fdf4; color: #16a34a; }
 .act-btn.del  { background: #fef2f2; color: #dc2626; }
+.act-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
 /* Pagination */
 .inv-pagination {

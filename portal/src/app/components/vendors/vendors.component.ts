@@ -48,6 +48,12 @@ export class VendorsComponent implements OnInit {
     this.service.restoreVendor(id).subscribe({ next: () => { this.toast.show('Vendor restored.', 'success'); this.loadTrash(); }, error: (err) => this.toast.show(err?.error?.message || 'Restore failed.', 'error') });
   }
 
+  openCreate() {
+    this.menuType = true; this.viewOnly = false;
+    this.vendorModel = new Vendor();
+    this.vendorForm.reset(); this.vendorForm.enable();
+  }
+
   viewVendor(row: any) {
     this.menuType = false;
     this.viewOnly = true;

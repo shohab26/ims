@@ -1,0 +1,11 @@
+.diff-table { font-size: 13px; }
+.field-col  { width: 200px; background: #f8f9fa; font-weight: 600; vertical-align: middle; }
+.old-head   { color: #dc3545; }
+.new-head   { color: #28a745; }
+.old-col    { color: #c0392b; background: #fff5f5; }
+.new-col    { color: #1a7a3c; background: #f0fff4; }
+.diff-changed td { font-weight: 600; }
+.diff-changed .field-col { background: #fff3cd; }
+.changed-dot { color: #ffc107; }
+.diff-meta   { font-size: 13px; }
+code         { font-size: 12px; }

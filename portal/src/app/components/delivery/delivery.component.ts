@@ -22,9 +22,13 @@ export class DeliveryComponent implements OnInit {
   ngOnInit() {
     this.deliveryForm = this.fb.group({ quantity: ['', Validators.required], productid: ['', Validators.required], statusid: ['', Validators.required], unit_price: ['', Validators.required], total_price: ['', Validators.required], deliverydate: ['', Validators.required], customerid: ['', Validators.required], createdate: [''] });
     this.load();
-    this.service.findAllProduct(1, 100).subscribe({ next: r => this.product = r.data, error: e => console.log(e) });
-    this.service.findAllStatus(1, 100).subscribe({ next: r => this.status = r.data, error: e => console.log(e) });
-    this.service.findAllCustomer(1, 100).subscribe({ next: r => this.customer = r.data, error: e => console.log(e) });
+    this.loadRefData();
+  }
+
+  loadRefData() {
+    this.service.findAllProduct(1, 200).subscribe({ next: r => this.product = r.data, error: () => this.toast.show('Failed to load products.', 'warning') });
+    this.service.findAllStatus(1, 200).subscribe({ next: r => this.status = r.data, error: () => this.toast.show('Failed to load statuses.', 'warning') });
+    this.service.findAllCustomer(1, 200).subscribe({ next: r => this.customer = r.data, error: () => this.toast.show('Failed to load customers.', 'warning') });
   }
 
   load() {
@@ -58,6 +62,13 @@ export class DeliveryComponent implements OnInit {
     this.service.restoreDelivery(id).subscribe({ next: () => { this.toast.show('Delivery restored.', 'success'); this.loadTrash(); }, error: (err) => this.toast.show(err?.error?.message || 'Restore failed.', 'error') });
   }
 
+  openCreate() {
+    this.menuType = true; this.viewOnly = false;
+    this.deliveryModel = new Delivery();
+    this.deliveryForm.reset(); this.deliveryForm.enable();
+    if (!this.product.length || !this.customer.length || !this.status.length) this.loadRefData();
+  }
+
   viewDelivery(row: any) {
     this.menuType = false;
     this.viewOnly = true;
@@ -78,6 +89,7 @@ export class DeliveryComponent implements OnInit {
     this.deliveryForm.enable();
     this.deliveryModel.id = row.id;
     this.deliveryForm.patchValue({ quantity: row.quantity, productid: row.productid, statusid: row.statusid, unit_price: row.unit_price, total_price: row.total_price, customerid: row.customerid, deliverydate: row.deliverydate });
+    if (!this.product.length || !this.customer.length || !this.status.length) this.loadRefData();
   }
 
   editDelivery() {

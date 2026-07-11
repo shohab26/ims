@@ -49,6 +49,12 @@ export class ProductsComponent implements OnInit {
     this.service.restoreProduct(id).subscribe({ next: () => { this.toast.show('Product restored.', 'success'); this.loadTrash(); }, error: (err) => this.toast.show(err?.error?.message || 'Restore failed.', 'error') });
   }
 
+  openCreate() {
+    this.menuType = true; this.viewOnly = false;
+    this.productModel = new Product();
+    this.productForm.reset(); this.productForm.enable();
+  }
+
   viewProduct(row: any) {
     this.menuType = false;
     this.viewOnly = true;

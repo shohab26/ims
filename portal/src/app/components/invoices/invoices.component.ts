@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { faPenToSquare, faTrash, faEye, faFilePdf, faPlus, faMinus, faTrashRestore, faList, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faEye, faFilePdf, faPlus, faMinus, faTrashRestore, faList, faTrashAlt, faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 import { Invoice, InvoiceItem, Customer, Product } from '../../model/inventory.model';
 import { ProductService } from '../../services/product.service';
 import { ToastService } from '../../services/toast.service';
@@ -13,13 +13,14 @@ export class InvoicesComponent implements OnInit {
   title = 'Invoices'; title2 = 'Invoice Form';
   menuType = true; viewOnly = false;
   faTrash = faTrash; faEdit = faPenToSquare; faEye = faEye; faPdf = faFilePdf; faPlus = faPlus; faMinus = faMinus;
-  faTrashRestore = faTrashRestore; faList = faList; faTrashAlt = faTrashAlt;
+  faTrashRestore = faTrashRestore; faList = faList; faTrashAlt = faTrashAlt; faSend = faPaperPlane;
 
   invoices: Invoice[] = []; customers: Customer[] = []; products: Product[] = [];
   invoiceForm!: FormGroup; invoiceModel: Invoice = new Invoice();
   lineItems: InvoiceItem[] = [];
   searchKeyword = ''; page = 1; totalPages = 1;
   activeTab: 'active' | 'trash' = 'active';
+  sendingEmailId: number | null = null;
 
   readonly statuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
 
@@ -36,8 +37,12 @@ export class InvoicesComponent implements OnInit {
       status:     ['draft']
     });
     this.load();
-    this.svc.findAllCustomer(1, 200).subscribe({ next: r => this.customers = r.data });
-    this.svc.findAllProduct(1, 200).subscribe({ next: r => this.products = r.data });
+    this.loadRefData();
+  }
+
+  loadRefData() {
+    this.svc.findAllCustomer(1, 200).subscribe({ next: r => this.customers = r.data, error: () => this.toast.show('Failed to load customers.', 'warning') });
+    this.svc.findAllProduct(1, 200).subscribe({ next: r => this.products = r.data, error: () => this.toast.show('Failed to load products.', 'warning') });
   }
 
   load() {
@@ -87,6 +92,7 @@ export class InvoicesComponent implements OnInit {
     this.lineItems = [new InvoiceItem()];
     this.invoiceForm.reset({ discount: 0, tax_percent: 0, status: 'draft' });
     this.invoiceForm.enable();
+    if (!this.customers.length || !this.products.length) this.loadRefData();
   }
 
   viewInvoice(row: Invoice) {
@@ -106,6 +112,7 @@ export class InvoicesComponent implements OnInit {
       this.invoiceForm.patchValue({ customerid: inv.customerid, due_date: inv.due_date?.split('T')[0] || '',
         discount: inv.discount, tax_percent: inv.tax_percent, notes: inv.notes, status: inv.status });
       this.invoiceForm.enable();
+      if (!this.customers.length || !this.products.length) this.loadRefData();
     }});
   }
 
@@ -114,7 +121,7 @@ export class InvoicesComponent implements OnInit {
     const payload = { ...this.invoiceForm.value, items: this.lineItems };
     this.svc.createInvoice(payload).subscribe({
       next: () => { this.toast.show('Invoice created.', 'success'); this.load(); this.menuType = true; this.closeModal.nativeElement.click(); },
-      error: () => this.toast.show('Create failed.', 'error')
+      error: (err) => this.toast.show(err?.error?.message || 'Create failed.', 'error')
     });
   }
 
@@ -123,7 +130,7 @@ export class InvoicesComponent implements OnInit {
     const payload = { ...this.invoiceForm.value, items: this.lineItems };
     this.svc.updateInvoice(this.invoiceModel.id, payload).subscribe({
       next: () => { this.toast.show('Invoice updated.', 'success'); this.load(); this.menuType = true; this.closeModal.nativeElement.click(); },
-      error: () => this.toast.show('Update failed.', 'error')
+      error: (err) => this.toast.show(err?.error?.message || 'Update failed.', 'error')
     });
   }
 
@@ -148,6 +155,15 @@ export class InvoicesComponent implements OnInit {
       a.href = url; a.download = `${number}.pdf`; a.click();
       URL.revokeObjectURL(url);
     }, error: () => this.toast.show('PDF download failed.', 'error') });
+  }
+
+  sendEmail(row: Invoice) {
+    if (!confirm(`Send invoice ${row.invoice_number} to customer's email?`)) return;
+    this.sendingEmailId = row.id;
+    this.svc.emailInvoice(row.id).subscribe({
+      next: r => { this.toast.show(r.message, 'success'); this.sendingEmailId = null; },
+      error: err => { this.toast.show(err?.error?.message || 'Failed to send email.', 'error'); this.sendingEmailId = null; }
+    });
   }
 
   getCustomerName(id: any) { return this.customers.find(c => c.id == id)?.customer_name || '—'; }

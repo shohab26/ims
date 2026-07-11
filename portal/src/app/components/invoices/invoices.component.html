@@ -61,6 +61,7 @@
               <th>Due Date</th>
               <th class="text-right">Total</th>
               <th class="text-center">Status</th>
+              <th>Created By</th>
               <th class="text-center">Actions</th>
             </tr>
           </thead>
@@ -75,6 +76,7 @@
               <td class="text-center">
                 <span class="inv-badge" [ngClass]="statusClass(inv.status)">{{ inv.status }}</span>
               </td>
+              <td>{{ inv.created_by_name || '-' }}</td>
               <td class="text-center">
                 <div class="action-group">
                   <button class="act-btn view"   title="View"
@@ -92,6 +94,11 @@
                   <button class="act-btn pdf"    title="Download PDF"
                           (click)="downloadPDF(inv.id, inv.invoice_number || 'invoice')">
                     <fa-icon [icon]="faPdf"></fa-icon>
+                  </button>
+                  <button class="act-btn send"   title="Send by email"
+                          (click)="sendEmail(inv)"
+                          [disabled]="sendingEmailId === inv.id">
+                    <fa-icon [icon]="faSend"></fa-icon>
                   </button>
                   <button class="act-btn del"    title="Delete"
                           (click)="deleteInvoice(inv.id)"
@@ -224,7 +231,7 @@
                         <select class="inv-select-sm" [(ngModel)]="line.productid" [ngModelOptions]="{standalone:true}"
                                 (change)="onProductChange(line)" [disabled]="viewOnly">
                           <option value="">Select</option>
-                          <option *ngFor="let p of products" [value]="p.id">{{ p.pcode }} — {{ p.pname }}</option>
+                          <option *ngFor="let p of products" [value]="p.id">{{ p.pcode }} — {{ p.pname }} (qty: {{ p.stock_quantity ?? 0 }})</option>
                         </select>
                       </td>
                       <td><input class="inv-input-sm" [(ngModel)]="line.description" [ngModelOptions]="{standalone:true}" [readonly]="viewOnly"></td>

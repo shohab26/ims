@@ -165,6 +165,17 @@ export class ProductService {
   updateBook(id: number, b: Book): Observable<Book> { return this.http.patch<Book>(`${this.baseUrl}/book/update/${id}`, b); }
   deleteBook(id: number): Observable<void> { return this.http.delete<void>(`${this.baseUrl}/book/${id}`); }
 
+  // stock movements
+  findStockMovements(productid: number, page = 1, limit = 20): Observable<PagedResult<any>> {
+    return this.http.get<PagedResult<any>>(`${this.baseUrl}/stock-movements/${productid}?page=${page}&limit=${limit}`);
+  }
+
+  // activity logs
+  findAllActivityLogs(filters: any = {}, page = 1, limit = 20): Observable<PagedResult<any>> {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit), ...filters });
+    return this.http.get<PagedResult<any>>(`${this.baseUrl}/activity-logs?${params}`);
+  }
+
   // invoices
   findAllInvoice(page=1, limit=10): Observable<PagedResult<Invoice>> {
     return this.http.get<PagedResult<Invoice>>(`${this.baseUrl}/invoices/?page=${page}&limit=${limit}`);
@@ -182,5 +193,8 @@ export class ProductService {
   restoreInvoice(id: number): Observable<Invoice> { return this.http.post<Invoice>(`${this.baseUrl}/invoices/restore/${id}`, {}); }
   downloadInvoicePDF(id: number): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/invoices/${id}/pdf`, { responseType: 'blob' });
+  }
+  emailInvoice(id: number): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/invoices/${id}/email`, {});
   }
 }

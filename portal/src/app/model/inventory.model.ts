@@ -20,6 +20,12 @@ export class Warehouse {
     wname?: string
     deleted_at?: string | null
     deleted_by?: number | null
+    created_at?: string | null
+    created_by?: number | null
+    created_by_name?: string | null
+    updated_at?: string | null
+    updated_by?: number | null
+    updated_by_name?: string | null
 }
 //status
 export class Status {
@@ -27,6 +33,12 @@ export class Status {
     status?: string
     deleted_at?: string | null
     deleted_by?: number | null
+    created_at?: string | null
+    created_by?: number | null
+    created_by_name?: string | null
+    updated_at?: string | null
+    updated_by?: number | null
+    updated_by_name?: string | null
 }
 
 //customers
@@ -38,6 +50,12 @@ export class Customer {
     email?: string
     deleted_at?: string | null
     deleted_by?: number | null
+    created_at?: string | null
+    created_by?: number | null
+    created_by_name?: string | null
+    updated_at?: string | null
+    updated_by?: number | null
+    updated_by_name?: string | null
 }
 //vendors
 export class Vendor {
@@ -49,6 +67,12 @@ export class Vendor {
     email?: string
     deleted_at?: string | null
     deleted_by?: number | null
+    created_at?: string | null
+    created_by?: number | null
+    created_by_name?: string | null
+    updated_at?: string | null
+    updated_by?: number | null
+    updated_by_name?: string | null
 }
 
 
@@ -59,6 +83,12 @@ export class Category {
     cname?: string
     deleted_at?: string | null
     deleted_by?: number | null
+    created_at?: string | null
+    created_by?: number | null
+    created_by_name?: string | null
+    updated_at?: string | null
+    updated_by?: number | null
+    updated_by_name?: string | null
 }
 //products
 export class Product {
@@ -67,9 +97,16 @@ export class Product {
     pcode?: string
     pcate?: number
     price?: number
+    stock_quantity?: number
     createdate?: Date
     deleted_at?: string | null
     deleted_by?: number | null
+    created_at?: string | null
+    created_by?: number | null
+    created_by_name?: string | null
+    updated_at?: string | null
+    updated_by?: number | null
+    updated_by_name?: string | null
 }
 //stocks
 export class Stock {
@@ -80,8 +117,14 @@ export class Stock {
     updatedate?: Date
     deleted_at?: string | null
     deleted_by?: number | null
+    created_at?: string | null
+    created_by?: number | null
+    created_by_name?: string | null
+    updated_at?: string | null
+    updated_by?: number | null
+    updated_by_name?: string | null
 }
-//stocks
+//orders
 export class Order {
 
     id: number = 0
@@ -94,10 +137,15 @@ export class Order {
     createdate?: Date
     deleted_at?: string | null
     deleted_by?: number | null
-
+    created_at?: string | null
+    created_by?: number | null
+    created_by_name?: string | null
+    updated_at?: string | null
+    updated_by?: number | null
+    updated_by_name?: string | null
 
 }
-//stocks
+//delivery
 export class Delivery {
 
     id: number = 0
@@ -111,6 +159,12 @@ export class Delivery {
     createdate?: Date
     deleted_at?: string | null
     deleted_by?: number | null
+    created_at?: string | null
+    created_by?: number | null
+    created_by_name?: string | null
+    updated_at?: string | null
+    updated_by?: number | null
+    updated_by_name?: string | null
 }
 
 // Invoice / Billing
@@ -147,4 +201,10 @@ export class Invoice {
   items: InvoiceItem[] = [];
   deleted_at?: string | null;
   deleted_by?: number | null;
+  created_at?: string | null;
+  created_by?: number | null;
+  created_by_name?: string | null;
+  updated_at?: string | null;
+  updated_by?: number | null;
+  updated_by_name?: string | null;
 }

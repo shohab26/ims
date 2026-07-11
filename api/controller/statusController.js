@@ -6,7 +6,11 @@ const findAll = async (req, res) => {
     const { page, limit, offset } = getPagination(req.query);
     try {
         const [data, count] = await Promise.all([
-            pool.query('SELECT * FROM status WHERE is_deleted=FALSE ORDER BY id DESC LIMIT $1 OFFSET $2', [limit, offset]),
+            pool.query(`SELECT s.*, u1.full_name AS created_by_name, u2.full_name AS updated_by_name
+                        FROM status s
+                        LEFT JOIN users u1 ON u1.id = s.created_by
+                        LEFT JOIN users u2 ON u2.id = s.updated_by
+                        WHERE s.is_deleted=FALSE ORDER BY s.id DESC LIMIT $1 OFFSET $2`, [limit, offset]),
             pool.query('SELECT COUNT(*) FROM status WHERE is_deleted=FALSE')
         ]);
         res.status(200).json(paginate(data.rows, parseInt(count.rows[0].count), page, limit));
@@ -46,14 +50,14 @@ const findById = async (req, res) => {
 
 const save = async (req, res) => {
     try {
-        await pool.query('INSERT INTO status(status) VALUES($1)', [req.body.status]);
+        await pool.query('INSERT INTO status(status,created_by) VALUES($1,$2)', [req.body.status, req.user.id]);
         res.status(200).json({ message: 'status added sucessfully' });
     } catch (err) { res.status(500).json(err); }
 };
 
 const updateById = async (req, res) => {
     try {
-        const result = await pool.query('UPDATE status SET status=$1 WHERE id=$2', [req.body.status, req.params.id]);
+        const result = await pool.query('UPDATE status SET status=$1,updated_by=$2 WHERE id=$3', [req.body.status, req.user.id, req.params.id]);
         if (result.rowCount === 0) return res.status(400).json({ message: 'status id does not match.' });
         res.status(200).json({ message: 'status updated sucessfully.' });
     } catch (err) { res.status(500).json(err); }

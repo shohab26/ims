@@ -1,5 +1,5 @@
 import { NgModule } from '@angular/core';
-import { BrowserModule, provideClientHydration } from '@angular/platform-browser';
+import { BrowserModule } from '@angular/platform-browser';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -28,6 +28,7 @@ import { ToastComponent } from './components/toast/toast.component';
 import { RolesComponent } from './components/roles/roles.component';
 import { UsersManagementComponent } from './components/users-management/users-management.component';
 import { InvoicesComponent } from './components/invoices/invoices.component';
+import { ActivityLogsComponent } from './components/activity-logs/activity-logs.component';
 import { authInterceptor } from './interceptors/auth.interceptor';
 
 import { NgChartsModule } from 'ng2-charts';
@@ -57,6 +58,7 @@ import { NgChartsModule } from 'ng2-charts';
     RolesComponent,
     UsersManagementComponent,
     InvoicesComponent,
+    ActivityLogsComponent,
   ],
   imports: [
     BrowserModule,
@@ -67,7 +69,6 @@ import { NgChartsModule } from 'ng2-charts';
     NgChartsModule,
   ],
   providers: [
-    provideClientHydration(),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor]))
   ],
   bootstrap: [AppComponent]

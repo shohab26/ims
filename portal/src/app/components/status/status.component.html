@@ -2,7 +2,7 @@
 
     <div class="page-section-header">
         <h4 class="card-title mb-0">{{title}}</h4>
-        <button type="button" class="btn btn-primary" (click)="menuType=true" data-toggle="modal"
+        <button type="button" class="btn btn-primary" (click)="openCreate()" data-toggle="modal"
             data-target="#exampleModal" *ngIf="authService.hasPermission('status', 'create')">
             <i class="fas fa-plus mr-1"></i> Create New
         </button>
@@ -108,7 +108,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="exampleModalLabel">{{title2}}</h5>
-                    <button type="button" class="close" #closeModal data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close" #closeModal data-dismiss="modal" aria-label="Close" (click)="openCreate()">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -126,7 +126,7 @@
                 <div class="modal-footer">
                     <div class="btn-group">
                         <div class="px-2">
-                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal" (click)="openCreate()">Close</button>
                         </div>
                         <div *ngIf=" menuType == true">
                             <button type="submit" class="btn btn-success" [disabled]="statusForm.invalid"

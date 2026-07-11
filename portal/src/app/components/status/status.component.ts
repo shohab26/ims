@@ -45,6 +45,12 @@ export class StatusComponent implements OnInit {
     this.service.restoreStatus(id).subscribe({ next: () => { this.toast.show('Status restored.', 'success'); this.loadTrash(); }, error: () => this.toast.show('Restore failed.', 'error') });
   }
 
+  openCreate() {
+    this.menuType = true; this.viewOnly = false;
+    this.statusModel = new Status();
+    this.statusForm.reset(); this.statusForm.enable();
+  }
+
   viewStatus(row: any) {
     this.menuType = false;
     this.viewOnly = true;

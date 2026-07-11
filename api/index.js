@@ -1,7 +1,7 @@
 const express = require('express');
 const connection = require('./connection');
 const cors = require('cors');
-const { verifyToken, checkPermission } = require('./middleware/auth.middleware');
+const { verifyToken, checkPermission, requireSuperAdmin } = require('./middleware/auth.middleware');
 
 // Routes
 const authRoute = require('./routes/auth');           // public
@@ -18,7 +18,9 @@ const customerRoute = require('./routes/customers');
 const stockRoute = require('./routes/stock');
 const orderRoute = require('./routes/order');
 const deliveryRoute = require('./routes/delivery');
-const invoiceRoute = require('./routes/invoices');
+const invoiceRoute      = require('./routes/invoices');
+const activityLogRoute      = require('./routes/activity_logs');
+const stockMovementRoute    = require('./routes/stock_movements');
 
 const app = express();
 app.use(cors());
@@ -33,7 +35,7 @@ app.use('/admin/roles', rolesAdminRoute);
 app.use('/admin/users', usersAdminRoute);
 
 // ── Protected inventory routes (verifyToken applied here) ─────
-app.use('/book',       verifyToken, bookRoute); // Keep bookRoute for backward compatibility if needed without specific permission
+app.use('/book',       verifyToken, bookRoute);
 app.use('/warehouse',  verifyToken, checkPermission('warehouse'), warehouseRoute);
 app.use('/status',     verifyToken, checkPermission('status'), statusRoute);
 app.use('/vendors',    verifyToken, checkPermission('vendors'), vendorRoute);
@@ -43,6 +45,8 @@ app.use('/products',   verifyToken, checkPermission('products'), productsRoute);
 app.use('/stocks',     verifyToken, checkPermission('stocks'), stockRoute);
 app.use('/orders',     verifyToken, checkPermission('orders'), orderRoute);
 app.use('/delivery',   verifyToken, checkPermission('delivery'), deliveryRoute);
-app.use('/invoices',   verifyToken, checkPermission('invoices'), invoiceRoute);
+app.use('/invoices',        verifyToken, checkPermission('invoices'), invoiceRoute);
+app.use('/activity-logs',   verifyToken, requireSuperAdmin, activityLogRoute);
+app.use('/stock-movements', verifyToken, checkPermission('stocks'), stockMovementRoute);
 
 module.exports = app;

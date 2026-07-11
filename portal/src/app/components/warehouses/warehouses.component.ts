@@ -45,6 +45,12 @@ export class WarehousesComponent implements OnInit {
     this.service.restoreWarehouse(id).subscribe({ next: () => { this.toast.show('Warehouse restored.', 'success'); this.loadTrash(); }, error: () => this.toast.show('Restore failed.', 'error') });
   }
 
+  openCreate() {
+    this.menuType = true; this.viewOnly = false;
+    this.wareModel = new Warehouse();
+    this.wareForm.reset(); this.wareForm.enable();
+  }
+
   viewWarehouse(row: any) {
     this.menuType = false;
     this.viewOnly = true;

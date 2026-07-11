@@ -1,5 +1,5 @@
 {
-  "name": "inventorybacksystem",
+  "name": "InvenTrack",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon server.js"
   },
-  "author": "Fatema Tuz Zohora",
+  "author": "Shohab Sikder",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",

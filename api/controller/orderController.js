@@ -7,7 +7,11 @@ const findAll = async (req, res) => {
     const { page, limit, offset } = getPagination(req.query);
     try {
         const [data, count] = await Promise.all([
-            pool.query('SELECT * FROM order_details WHERE is_deleted=FALSE ORDER BY id DESC LIMIT $1 OFFSET $2', [limit, offset]),
+            pool.query(`SELECT o.*, u1.full_name AS created_by_name, u2.full_name AS updated_by_name
+                        FROM order_details o
+                        LEFT JOIN users u1 ON u1.id = o.created_by
+                        LEFT JOIN users u2 ON u2.id = o.updated_by
+                        WHERE o.is_deleted=FALSE ORDER BY o.id DESC LIMIT $1 OFFSET $2`, [limit, offset]),
             pool.query('SELECT COUNT(*) FROM order_details WHERE is_deleted=FALSE')
         ]);
         res.status(200).json(paginate(data.rows, parseInt(count.rows[0].count), page, limit));
@@ -48,18 +52,19 @@ const findById = async (req, res) => {
 const save = async (req, res) => {
     const { quantity, productid, unit_price, statusid, total_price, vendorid } = req.body;
     try {
-        await pool.query('INSERT INTO order_details(quantity,productid,unit_price,statusid,total_price,vendorid,createdate) VALUES($1,$2,$3,$4,$5,$6,$7)',
-            [quantity, productid, unit_price, statusid, total_price, vendorid, new Date()]);
+        const result = await pool.query(
+            'INSERT INTO order_details(quantity,productid,unit_price,statusid,total_price,vendorid,createdate,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',
+            [quantity, productid, unit_price, statusid, total_price, vendorid, new Date(), req.user.id]);
         res.status(200).json({ message: 'order added sucessfully' });
+        stockService.saveStock(productid, quantity, { userId: req.user.id, refType: 'order_details', refId: result.rows[0].id });
     } catch (err) { res.status(500).json(err); }
-    stockService.saveStock(productid, quantity);
 };
 
 const updateById = async (req, res) => {
     const { quantity, productid, unit_price, statusid, total_price, vendorid } = req.body;
     try {
-        const result = await pool.query('UPDATE order_details SET quantity=$1,productid=$2,unit_price=$3,statusid=$4,total_price=$5,vendorid=$6 WHERE id=$7',
-            [quantity, productid, unit_price, statusid, total_price, vendorid, req.params.id]);
+        const result = await pool.query('UPDATE order_details SET quantity=$1,productid=$2,unit_price=$3,statusid=$4,total_price=$5,vendorid=$6,updated_by=$7 WHERE id=$8',
+            [quantity, productid, unit_price, statusid, total_price, vendorid, req.user.id, req.params.id]);
         if (result.rowCount === 0) return res.status(400).json({ message: 'order id does not match.' });
         res.status(200).json({ message: 'order updated sucessfully.' });
     } catch (err) { res.status(500).json(err); }

@@ -8,6 +8,7 @@ router.get('/search',      ctrl.findByKeyword);
 router.get('/trash',       ctrl.findDeleted);
 router.get('/:id',         ctrl.findById);
 router.get('/:id/pdf',     ctrl.downloadPDF);
+router.post('/:id/email',  ctrl.emailInvoice);
 router.post('/',           ctrl.save);
 router.patch('/update/:id', ctrl.updateById);
 router.delete('/:id',      ctrl.deleteById);

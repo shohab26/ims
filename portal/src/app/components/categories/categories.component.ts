@@ -45,6 +45,12 @@ export class CategoriesComponent implements OnInit {
     this.service.restoreCategory(id).subscribe({ next: () => { this.toast.show('Category restored.', 'success'); this.loadTrash(); }, error: () => this.toast.show('Restore failed.', 'error') });
   }
 
+  openCreate() {
+    this.menuType = true; this.viewOnly = false;
+    this.cateModel = new Category();
+    this.cateForm.reset(); this.cateForm.enable();
+  }
+
   viewCategory(row: any) {
     this.menuType = false;
     this.viewOnly = true;

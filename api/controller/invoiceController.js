@@ -1,9 +1,9 @@
 const pool = require('../connection');
 const PDFDocument = require('pdfkit');
 const { getPagination, paginate } = require('../utils/pagination');
+const emailService = require('../services/emailService');
 
 // ── helpers ─────────────────────────────────────────────────────
-const genInvoiceNumber = () => `INV-${Date.now()}`;
 
 const itemsOf = async (invoiceid) => {
     const r = await pool.query(
@@ -18,8 +18,11 @@ const findAll = async (req, res) => {
     const { page, limit, offset } = getPagination(req.query);
     try {
         const [data, count] = await Promise.all([
-            pool.query(`SELECT i.*, c.customer_name FROM invoices i
+            pool.query(`SELECT i.*, c.customer_name, u1.full_name AS created_by_name, u2.full_name AS updated_by_name
+                        FROM invoices i
                         JOIN customers c ON c.id = i.customerid
+                        LEFT JOIN users u1 ON u1.id = i.created_by
+                        LEFT JOIN users u2 ON u2.id = i.updated_by
                         WHERE i.is_deleted = FALSE
                         ORDER BY i.id DESC LIMIT $1 OFFSET $2`, [limit, offset]),
             pool.query('SELECT COUNT(*) FROM invoices WHERE is_deleted = FALSE')
@@ -76,18 +79,35 @@ const findById = async (req, res) => {
 
 const save = async (req, res) => {
     const { customerid, due_date, discount = 0, tax_percent = 0, notes, items = [] } = req.body;
+
+    // Check stock availability for each line item before opening a transaction
+    for (const item of items) {
+        const s = await pool.query(
+            'SELECT quantity FROM stocks WHERE productid=$1 AND is_deleted=FALSE', [item.productid]);
+        const available = s.rows.length ? parseFloat(s.rows[0].quantity) : 0;
+        if (available < parseFloat(item.quantity)) {
+            const prod = await pool.query('SELECT pcode FROM products WHERE id=$1', [item.productid]);
+            const code = prod.rows[0]?.pcode || `Product #${item.productid}`;
+            return res.status(400).json({
+                message: `Insufficient stock for ${code}. Only ${available} unit(s) available.`
+            });
+        }
+    }
+
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        const invoice_number = genInvoiceNumber();
+        const seqRes = await client.query(
+            `SELECT next_invoice_number(EXTRACT(YEAR FROM NOW())::INTEGER) AS num`);
+        const invoice_number = seqRes.rows[0].num;
         const subtotal = items.reduce((s, i) => s + (i.quantity * i.unit_price), 0);
         const tax_amount = subtotal * (tax_percent / 100);
         const total = subtotal - discount + tax_amount;
 
         const inv = await client.query(
-            `INSERT INTO invoices(invoice_number,customerid,due_date,subtotal,discount,tax_percent,tax_amount,total,notes)
-             VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
-            [invoice_number, customerid, due_date || null, subtotal, discount, tax_percent, tax_amount, total, notes]);
+            `INSERT INTO invoices(invoice_number,customerid,due_date,subtotal,discount,tax_percent,tax_amount,total,notes,created_by)
+             VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+            [invoice_number, customerid, due_date || null, subtotal, discount, tax_percent, tax_amount, total, notes, req.user.id]);
         const invoiceid = inv.rows[0].id;
 
         for (const item of items) {
@@ -105,6 +125,20 @@ const save = async (req, res) => {
 
 const updateById = async (req, res) => {
     const { customerid, due_date, discount = 0, tax_percent = 0, notes, status, items = [] } = req.body;
+
+    for (const item of items) {
+        const s = await pool.query(
+            'SELECT quantity FROM stocks WHERE productid=$1 AND is_deleted=FALSE', [item.productid]);
+        const available = s.rows.length ? parseFloat(s.rows[0].quantity) : 0;
+        if (available < parseFloat(item.quantity)) {
+            const prod = await pool.query('SELECT pcode FROM products WHERE id=$1', [item.productid]);
+            const code = prod.rows[0]?.pcode || `Product #${item.productid}`;
+            return res.status(400).json({
+                message: `Insufficient stock for ${code}. Only ${available} unit(s) available.`
+            });
+        }
+    }
+
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
@@ -114,8 +148,8 @@ const updateById = async (req, res) => {
 
         const r = await client.query(
             `UPDATE invoices SET customerid=$1,due_date=$2,subtotal=$3,discount=$4,tax_percent=$5,
-             tax_amount=$6,total=$7,notes=$8,status=COALESCE($9,status) WHERE id=$10`,
-            [customerid, due_date || null, subtotal, discount, tax_percent, tax_amount, total, notes, status, req.params.id]);
+             tax_amount=$6,total=$7,notes=$8,status=COALESCE($9,status),updated_by=$10 WHERE id=$11`,
+            [customerid, due_date || null, subtotal, discount, tax_percent, tax_amount, total, notes, status, req.user.id, req.params.id]);
         if (!r.rowCount) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Not found.' }); }
 
         await client.query('DELETE FROM invoice_items WHERE invoiceid=$1', [req.params.id]);
@@ -181,20 +215,13 @@ const restoreById = async (req, res) => {
     finally { client.release(); }
 };
 
-// ── PDF Download ─────────────────────────────────────────────────
-const downloadPDF = async (req, res) => {
-    try {
-        const inv = await pool.query(
-            `SELECT i.*, c.customer_name, c.email, c.phone, c.address
-             FROM invoices i JOIN customers c ON c.id = i.customerid WHERE i.id = $1`, [req.params.id]);
-        if (!inv.rows.length) return res.status(404).json({ message: 'Not found.' });
-        const invoice = inv.rows[0];
-        const items = await itemsOf(req.params.id);
-
-        const doc = new PDFDocument({ margin: 50, size: 'A4' });
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${invoice.invoice_number}.pdf"`);
-        doc.pipe(res);
+// ── PDF builder (shared by download and email) ───────────────────
+const buildPDFBuffer = (invoice, items) => new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const chunks = [];
+    doc.on('data', c => chunks.push(c));
+    doc.on('end',  () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
 
         // ── Brand header ────────────────────────────────────────
         doc.rect(0, 0, doc.page.width, 90).fill('#1a1a2e');
@@ -298,8 +325,46 @@ const downloadPDF = async (req, res) => {
         doc.fillColor('#94a3b8').fontSize(8).font('Helvetica')
             .text('Thank you for your business! — InvenTrack', 0, doc.page.height - 26, { align: 'center' });
 
-        doc.end();
+    doc.end();
+});
+
+// ── PDF Download ─────────────────────────────────────────────────
+const downloadPDF = async (req, res) => {
+    try {
+        const inv = await pool.query(
+            `SELECT i.*, c.customer_name, c.email, c.phone, c.address
+             FROM invoices i JOIN customers c ON c.id = i.customerid WHERE i.id = $1`, [req.params.id]);
+        if (!inv.rows.length) return res.status(404).json({ message: 'Not found.' });
+        const buf = await buildPDFBuffer(inv.rows[0], await itemsOf(req.params.id));
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${inv.rows[0].invoice_number}.pdf"`);
+        res.send(buf);
     } catch (err) { res.status(500).json(err); }
 };
 
-module.exports = { findAll, findByKeyword, findById, save, updateById, deleteById, restoreById, findDeleted, downloadPDF };
+// ── Email Invoice ─────────────────────────────────────────────────
+const emailInvoice = async (req, res) => {
+    try {
+        const inv = await pool.query(
+            `SELECT i.*, c.customer_name, c.email, c.phone, c.address
+             FROM invoices i JOIN customers c ON c.id = i.customerid WHERE i.id = $1`, [req.params.id]);
+        if (!inv.rows.length) return res.status(404).json({ message: 'Invoice not found.' });
+        const invoice = inv.rows[0];
+        if (!invoice.email) return res.status(400).json({ message: 'Customer has no email address on file.' });
+
+        const pdfBuffer = await buildPDFBuffer(invoice, await itemsOf(req.params.id));
+        await emailService.sendInvoiceEmail({
+            to: invoice.email,
+            customerName: invoice.customer_name,
+            invoiceNumber: invoice.invoice_number,
+            total: invoice.total,
+            dueDate: invoice.due_date,
+            pdfBuffer,
+        });
+        res.json({ message: `Invoice ${invoice.invoice_number} sent to ${invoice.email}.` });
+    } catch (err) {
+        res.status(500).json({ message: err.message || 'Failed to send email.' });
+    }
+};
+
+module.exports = { findAll, findByKeyword, findById, save, updateById, deleteById, restoreById, findDeleted, downloadPDF, emailInvoice };

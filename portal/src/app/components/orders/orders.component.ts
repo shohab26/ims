@@ -22,9 +22,13 @@ export class OrdersComponent implements OnInit {
   ngOnInit() {
     this.orderForm = this.fb.group({ quantity: ['', Validators.required], productid: ['', Validators.required], statusid: ['', Validators.required], unit_price: ['', Validators.required], total_price: ['', Validators.required], vendorid: ['', Validators.required], createdate: [''] });
     this.load();
-    this.service.findAllProduct(1, 100).subscribe({ next: r => this.product = r.data, error: e => console.log(e) });
-    this.service.findAllStatus(1, 100).subscribe({ next: r => this.status = r.data, error: e => console.log(e) });
-    this.service.findAllVendor(1, 100).subscribe({ next: r => this.vendor = r.data, error: e => console.log(e) });
+    this.loadRefData();
+  }
+
+  loadRefData() {
+    this.service.findAllProduct(1, 200).subscribe({ next: r => this.product = r.data, error: () => this.toast.show('Failed to load products.', 'warning') });
+    this.service.findAllStatus(1, 200).subscribe({ next: r => this.status = r.data, error: () => this.toast.show('Failed to load statuses.', 'warning') });
+    this.service.findAllVendor(1, 200).subscribe({ next: r => this.vendor = r.data, error: () => this.toast.show('Failed to load vendors.', 'warning') });
   }
 
   load() {
@@ -58,6 +62,13 @@ export class OrdersComponent implements OnInit {
     this.service.restoreOrder(id).subscribe({ next: () => { this.toast.show('Order restored.', 'success'); this.loadTrash(); }, error: (err) => this.toast.show(err?.error?.message || 'Restore failed.', 'error') });
   }
 
+  openCreate() {
+    this.menuType = true; this.viewOnly = false;
+    this.orderModel = new Order();
+    this.orderForm.reset(); this.orderForm.enable();
+    if (!this.product.length || !this.vendor.length || !this.status.length) this.loadRefData();
+  }
+
   viewOrder(row: any) {
     this.menuType = false;
     this.viewOnly = true;
@@ -78,6 +89,7 @@ export class OrdersComponent implements OnInit {
     this.orderForm.enable();
     this.orderModel.id = row.id;
     this.orderForm.patchValue({ quantity: row.quantity, productid: row.productid, statusid: row.statusid, unit_price: row.unit_price, total_price: row.total_price, vendorid: row.vendorid });
+    if (!this.product.length || !this.vendor.length || !this.status.length) this.loadRefData();
   }
 
   editOrder() {

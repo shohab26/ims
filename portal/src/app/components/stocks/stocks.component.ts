@@ -1,6 +1,6 @@
 import { AuthService } from '../../services/auth.service';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { faPenToSquare, faTrash, faEye, faTrashRestore, faList, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { faPenToSquare, faTrash, faEye, faTrashRestore, faList, faTrashAlt, faHistory } from '@fortawesome/free-solid-svg-icons';
 import { Product, Stock, Warehouse } from '../../model/inventory.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
@@ -10,20 +10,26 @@ import { ToastService } from '../../services/toast.service';
 export class StocksComponent implements OnInit {
   @ViewChild('closeModal') closeModal!: ElementRef;
   title = 'Stock List'; title2 = 'Stock Entry Form'; menuType = true;
-  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye; faTrashRestore = faTrashRestore; faList = faList; faTrashAlt = faTrashAlt;
+  fatrash = faTrash; editicon = faPenToSquare; faeye = faEye; faTrashRestore = faTrashRestore; faList = faList; faTrashAlt = faTrashAlt; faHistory = faHistory;
   stock: Stock[] = []; product: Product[] = []; warehouse: Warehouse[] = [];
   stockForm!: FormGroup; stockModel: Stock = new Stock();
   searchKeyword = ''; page = 1; totalPages = 1;
   viewOnly = false;
   activeTab: 'active' | 'trash' = 'active';
 
+  movements: any[] = []; movPage = 1; movTotalPages = 1; selectedProduct: any = null;
+
   constructor(public authService: AuthService, private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
 
   ngOnInit() {
     this.stockForm = this.fb.group({ quantity: ['', Validators.required], productid: ['', Validators.required], warehouseid: ['', Validators.required], updatedate: [''] });
     this.load();
-    this.service.findAllProduct(1, 100).subscribe({ next: r => this.product = r.data, error: e => console.log(e) });
-    this.service.findAllWarehouse(1, 100).subscribe({ next: r => this.warehouse = r.data, error: e => console.log(e) });
+    this.loadRefData();
+  }
+
+  loadRefData() {
+    this.service.findAllProduct(1, 200).subscribe({ next: r => this.product = r.data, error: () => this.toast.show('Failed to load products.', 'warning') });
+    this.service.findAllWarehouse(1, 200).subscribe({ next: r => this.warehouse = r.data, error: () => this.toast.show('Failed to load warehouses.', 'warning') });
   }
 
   load() {
@@ -51,6 +57,13 @@ export class StocksComponent implements OnInit {
     this.service.restoreStock(id).subscribe({ next: () => { this.toast.show('Stock restored.', 'success'); this.loadTrash(); }, error: (err) => this.toast.show(err?.error?.message || 'Restore failed.', 'error') });
   }
 
+  openCreate() {
+    this.menuType = true; this.viewOnly = false;
+    this.stockModel = new Stock();
+    this.stockForm.reset(); this.stockForm.enable();
+    if (!this.product.length || !this.warehouse.length) this.loadRefData();
+  }
+
   viewStock(row: any) {
     this.menuType = false;
     this.viewOnly = true;
@@ -71,6 +84,7 @@ export class StocksComponent implements OnInit {
     this.stockForm.enable();
     this.stockModel.id = row.id;
     this.stockForm.patchValue({ quantity: row.quantity, productid: row.productid, warehouseid: row.warehouseid });
+    if (!this.product.length || !this.warehouse.length) this.loadRefData();
   }
 
   editStock() {
@@ -83,4 +97,23 @@ export class StocksComponent implements OnInit {
   }
 
   filterProductData(id: any) { const p = this.product.find(x => x.id == id); return p ? p.pcode : ''; }
+
+  openHistory(row: any) {
+    this.selectedProduct = row;
+    this.movPage = 1;
+    this.loadMovements();
+  }
+
+  loadMovements() {
+    this.service.findStockMovements(this.selectedProduct.productid, this.movPage).subscribe({
+      next: r => { this.movements = r.data; this.movTotalPages = r.totalPages; },
+      error: e => console.error(e)
+    });
+  }
+
+  movGoToPage(p: number) { if (p >= 1 && p <= this.movTotalPages) { this.movPage = p; this.loadMovements(); } }
+
+  changeClass(change: number): string {
+    return change > 0 ? 'text-success fw-bold' : 'text-danger fw-bold';
+  }
 }

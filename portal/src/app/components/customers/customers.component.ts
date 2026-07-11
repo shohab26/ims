@@ -48,6 +48,12 @@ export class CustomersComponent implements OnInit {
     this.service.restoreCustomer(id).subscribe({ next: () => { this.toast.show('Customer restored.', 'success'); this.loadTrash(); }, error: (err) => this.toast.show(err?.error?.message || 'Restore failed.', 'error') });
   }
 
+  openCreate() {
+    this.menuType = true; this.viewOnly = false;
+    this.customerModel = new Customer();
+    this.customerForm.reset(); this.customerForm.enable();
+  }
+
   viewCustomer(row: any) {
     this.menuType = false;
     this.viewOnly = true;
