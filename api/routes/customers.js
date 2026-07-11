@@ -1,5 +1,6 @@
 const express = require('express');
 const { requireDeletePermission } = require('../middleware/auth.middleware');
+const { validateRequired, validateEmail } = require('../middleware/validation.middleware');
 const connection = require('../connection');
 
 const router = express.Router();
@@ -7,6 +8,10 @@ const router = express.Router();
 //controller
 const customerController = require('../controller/customersController');
 
+const validateCustomer = [
+    validateRequired(['customer_name', 'email']),
+    validateEmail('email'),
+];
 
 // get request
 router.get('/',customerController.findAll);
@@ -17,10 +22,10 @@ router.get('/trash',customerController.findDeleted);
 // get request for single object
 router.get('/:id',customerController.findById);
 // post request
-router.post('/',customerController.save);
+router.post('/', validateCustomer, customerController.save);
 
 // put or patch request
-router.patch('/update/:id',customerController.updateById);
+router.patch('/update/:id', validateCustomer, customerController.updateById);
 // delete request (soft delete)
 router.delete('/:id',customerController.deleteById);
 // restore request

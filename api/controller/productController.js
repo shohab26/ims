@@ -49,7 +49,10 @@ const save = async (req, res) => {
     try {
         await pool.query('INSERT INTO products(pcode,pname,pcate,price,createdate) VALUES($1,$2,$3,$4,$5)', [pcode, pname, pcate, price, new Date()]);
         res.status(200).json({ message: 'Product added sucessfully' });
-    } catch (err) { res.status(500).json(err); }
+    } catch (err) {
+        if (err.code === '23505') return res.status(409).json({ message: 'Product code (SKU) is already in use.' });
+        res.status(500).json(err);
+    }
 };
 
 const updateById = async (req, res) => {
@@ -58,7 +61,10 @@ const updateById = async (req, res) => {
         const result = await pool.query('UPDATE products SET pcode=$1,pname=$2,pcate=$3,price=$4 WHERE id=$5', [pcode, pname, pcate, price, req.params.id]);
         if (result.rowCount === 0) return res.status(400).json({ message: 'Product id does not match.' });
         res.status(200).json({ message: 'Product updated sucessfully.' });
-    } catch (err) { res.status(500).json(err); }
+    } catch (err) {
+        if (err.code === '23505') return res.status(409).json({ message: 'Product code (SKU) is already in use.' });
+        res.status(500).json(err);
+    }
 };
 
 const deleteById = async (req, res) => {

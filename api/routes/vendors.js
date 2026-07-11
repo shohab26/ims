@@ -1,5 +1,6 @@
 const express = require('express');
 const { requireDeletePermission } = require('../middleware/auth.middleware');
+const { validateRequired, validateEmail } = require('../middleware/validation.middleware');
 const connection = require('../connection');
 
 const router = express.Router();
@@ -7,6 +8,10 @@ const router = express.Router();
 //controller
 const vendorController = require('../controller/vendorController');
 
+const validateVendor = [
+    validateRequired(['company', 'contact_person', 'email']),
+    validateEmail('email'),
+];
 
 // get request
 router.get('/',vendorController.findAll);
@@ -17,10 +22,10 @@ router.get('/trash',vendorController.findDeleted);
 // get request for single object
 router.get('/:id',vendorController.findById);
 // post request
-router.post('/',vendorController.save);
+router.post('/', validateVendor, vendorController.save);
 
 // put or patch request
-router.patch('/update/:id',vendorController.updateById);
+router.patch('/update/:id', validateVendor, vendorController.updateById);
 // delete request (soft delete)
 router.delete('/:id',vendorController.deleteById);
 // restore request

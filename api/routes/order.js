@@ -1,5 +1,6 @@
 const express = require('express');
 const { requireDeletePermission } = require('../middleware/auth.middleware');
+const { validateRequired, validateNumericRanges } = require('../middleware/validation.middleware');
 const connection = require('../connection');
 
 const router = express.Router();
@@ -7,6 +8,10 @@ const router = express.Router();
 //controller
 const orderController = require('../controller/orderController');
 
+const validateOrder = [
+    validateRequired(['quantity', 'productid', 'unit_price']),
+    validateNumericRanges({ quantity: { min: 0 }, unit_price: { min: 0 }, total_price: { min: 0 } }),
+];
 
 // get request
 router.get('/',orderController.findAll);
@@ -23,10 +28,10 @@ router.get('/trash',orderController.findDeleted);
 router.get('/:id',orderController.findById);
 
 // post request
-router.post('/',orderController.save);
+router.post('/', validateOrder, orderController.save);
 
 // put or patch request
-router.patch('/update/:id',orderController.updateById);
+router.patch('/update/:id', validateOrder, orderController.updateById);
 // delete request (soft delete)
 router.delete('/:id',orderController.deleteById);
 // restore request

@@ -51,11 +51,11 @@ export class OrdersComponent implements OnInit {
   goToPage(p: number) { if (p >= 1 && p <= this.totalPages) { this.page = p; this.activeTab === 'active' ? this.load() : this.loadTrash(); } }
 
   deleteOrder(id: number) {
-    this.service.deleteOrder(id).subscribe({ next: () => { this.toast.show('Order moved to trash.', 'warning'); this.switchTab(this.activeTab); }, error: () => this.toast.show('Delete failed.', 'error') });
+    this.service.deleteOrder(id).subscribe({ next: () => { this.toast.show('Order moved to trash.', 'warning'); this.switchTab(this.activeTab); }, error: (err) => this.toast.show(err?.error?.message || 'Delete failed.', 'error') });
   }
 
   restoreOrder(id: number) {
-    this.service.restoreOrder(id).subscribe({ next: () => { this.toast.show('Order restored.', 'success'); this.loadTrash(); }, error: () => this.toast.show('Restore failed.', 'error') });
+    this.service.restoreOrder(id).subscribe({ next: () => { this.toast.show('Order restored.', 'success'); this.loadTrash(); }, error: (err) => this.toast.show(err?.error?.message || 'Restore failed.', 'error') });
   }
 
   viewOrder(row: any) {
@@ -68,7 +68,7 @@ export class OrdersComponent implements OnInit {
   onSubmit() {
     if (this.orderForm.valid) this.service.createOrder(this.orderForm.value).subscribe({
       next: () => { this.toast.show('Order created successfully.', 'success'); this.load(); this.orderForm.reset(); this.menuType = true; this.closeModal.nativeElement.click(); },
-      error: () => this.toast.show('Create failed.', 'error')
+      error: (err) => this.toast.show(err?.error?.message || 'Create failed.', 'error')
     });
   }
 
@@ -84,7 +84,7 @@ export class OrdersComponent implements OnInit {
     if (this.orderForm.valid) { Object.assign(this.orderModel, this.orderForm.value);
       this.service.updateOrder(this.orderModel.id, this.orderModel).subscribe({
         next: () => { this.toast.show('Order updated successfully.', 'success'); this.load(); this.orderForm.reset(); this.menuType = true; this.closeModal.nativeElement.click(); },
-        error: () => this.toast.show('Update failed.', 'error')
+        error: (err) => this.toast.show(err?.error?.message || 'Update failed.', 'error')
       });
     }
   }

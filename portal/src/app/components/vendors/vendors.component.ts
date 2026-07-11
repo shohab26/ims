@@ -41,11 +41,11 @@ export class VendorsComponent implements OnInit {
   goToPage(p: number) { if (p >= 1 && p <= this.totalPages) { this.page = p; this.activeTab === 'active' ? this.load() : this.loadTrash(); } }
 
   deleteVendor(id: number) {
-    this.service.deleteVendor(id).subscribe({ next: () => { this.toast.show('Vendor moved to trash.', 'warning'); this.switchTab(this.activeTab); }, error: () => this.toast.show('Delete failed.', 'error') });
+    this.service.deleteVendor(id).subscribe({ next: () => { this.toast.show('Vendor moved to trash.', 'warning'); this.switchTab(this.activeTab); }, error: (err) => this.toast.show(err?.error?.message || 'Delete failed.', 'error') });
   }
 
   restoreVendor(id: number) {
-    this.service.restoreVendor(id).subscribe({ next: () => { this.toast.show('Vendor restored.', 'success'); this.loadTrash(); }, error: () => this.toast.show('Restore failed.', 'error') });
+    this.service.restoreVendor(id).subscribe({ next: () => { this.toast.show('Vendor restored.', 'success'); this.loadTrash(); }, error: (err) => this.toast.show(err?.error?.message || 'Restore failed.', 'error') });
   }
 
   viewVendor(row: any) {
@@ -58,7 +58,7 @@ export class VendorsComponent implements OnInit {
   onSubmit() {
     if (this.vendorForm.valid) this.service.createVendor(this.vendorForm.value).subscribe({
       next: () => { this.toast.show('Vendor created successfully.', 'success'); this.load(); this.vendorForm.reset(); this.menuType = true; this.closeModal.nativeElement.click(); },
-      error: () => this.toast.show('Create failed.', 'error')
+      error: (err) => this.toast.show(err?.error?.message || 'Create failed.', 'error')
     });
   }
 
@@ -74,7 +74,7 @@ export class VendorsComponent implements OnInit {
     if (this.vendorForm.valid) { Object.assign(this.vendorModel, this.vendorForm.value);
       this.service.updateVendor(this.vendorModel.id, this.vendorModel).subscribe({
         next: () => { this.toast.show('Vendor updated successfully.', 'success'); this.load(); this.vendorForm.reset(); this.menuType = true; this.closeModal.nativeElement.click(); },
-        error: () => this.toast.show('Update failed.', 'error')
+        error: (err) => this.toast.show(err?.error?.message || 'Update failed.', 'error')
       });
     }
   }

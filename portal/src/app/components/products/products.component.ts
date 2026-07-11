@@ -42,11 +42,11 @@ export class ProductsComponent implements OnInit {
   goToPage(p: number) { if (p >= 1 && p <= this.totalPages) { this.page = p; this.activeTab === 'active' ? this.load() : this.loadTrash(); } }
 
   deleteProduct(id: number) {
-    this.service.deleteProduct(id).subscribe({ next: () => { this.toast.show('Product moved to trash.', 'warning'); this.switchTab(this.activeTab); }, error: () => this.toast.show('Delete failed.', 'error') });
+    this.service.deleteProduct(id).subscribe({ next: () => { this.toast.show('Product moved to trash.', 'warning'); this.switchTab(this.activeTab); }, error: (err) => this.toast.show(err?.error?.message || 'Delete failed.', 'error') });
   }
 
   restoreProduct(id: number) {
-    this.service.restoreProduct(id).subscribe({ next: () => { this.toast.show('Product restored.', 'success'); this.loadTrash(); }, error: () => this.toast.show('Restore failed.', 'error') });
+    this.service.restoreProduct(id).subscribe({ next: () => { this.toast.show('Product restored.', 'success'); this.loadTrash(); }, error: (err) => this.toast.show(err?.error?.message || 'Restore failed.', 'error') });
   }
 
   viewProduct(row: any) {
@@ -59,7 +59,7 @@ export class ProductsComponent implements OnInit {
   onSubmit() {
     if (this.productForm.valid) this.service.createProduct(this.productForm.value).subscribe({
       next: () => { this.toast.show('Product created successfully.', 'success'); this.load(); this.productForm.reset(); this.menuType = true; this.closeModal.nativeElement.click(); },
-      error: () => this.toast.show('Create failed.', 'error')
+      error: (err) => this.toast.show(err?.error?.message || 'Create failed.', 'error')
     });
   }
 
@@ -75,7 +75,7 @@ export class ProductsComponent implements OnInit {
     if (this.productForm.valid) { Object.assign(this.productModel, this.productForm.value);
       this.service.updateProduct(this.productModel.id, this.productModel).subscribe({
         next: () => { this.toast.show('Product updated successfully.', 'success'); this.load(); this.productForm.reset(); this.menuType = true; this.closeModal.nativeElement.click(); },
-        error: () => this.toast.show('Update failed.', 'error')
+        error: (err) => this.toast.show(err?.error?.message || 'Update failed.', 'error')
       });
     }
   }

@@ -51,10 +51,6 @@ const issueLoginResponse = async (res, user) => {
 const login = async (req, res) => {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Email and password are required.' });
-    }
-
     try {
         // Find user with role info
         const result = await pool.query(
@@ -104,14 +100,6 @@ const login = async (req, res) => {
  */
 const completePasswordChange = async (req, res) => {
     const { email, otp, new_password } = req.body;
-
-    if (!email || !otp || !new_password) {
-        return res.status(400).json({ message: 'Email, OTP, and new password are required.' });
-    }
-
-    if (String(new_password).length < 8) {
-        return res.status(400).json({ message: 'New password must be at least 8 characters.' });
-    }
 
     try {
         const result = await pool.query(
