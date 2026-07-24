@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/internal/Observable';
-import { Book, Warehouse, Category, Product, Status, Customer, Vendor, Stock, Order, Delivery, Invoice } from '../model/inventory.model';
-import { HttpClient } from '@angular/common/http';
+import { Book, Warehouse, Category, Product, Status, Customer, Vendor, Stock, Order, Delivery, Invoice, Payment, Return, StockTransfer, LowStockItem, ReportResult, RevenueChartData, InventoryValueSummary, PendingOrdersSummary, OverdueInvoicesSummary, TopCustomerRow, TopProductRow } from '../model/inventory.model';
+import { HttpClient, HttpParams } from '@angular/common/http';
 
 export interface PagedResult<T> { data: T[]; total: number; page: number; totalPages: number; }
 
@@ -73,6 +73,45 @@ export class ProductService {
   updateProduct(id: number, p: Product): Observable<Product> { return this.http.patch<Product>(`${this.baseUrl}/products/update/${id}`, p); }
   deleteProduct(id: number): Observable<void> { return this.http.delete<void>(`${this.baseUrl}/products/${id}`); }
   restoreProduct(id: number): Observable<Product> { return this.http.post<Product>(`${this.baseUrl}/products/restore/${id}`, {}); }
+  findLowStockProducts(): Observable<LowStockItem[]> { return this.http.get<LowStockItem[]>(`${this.baseUrl}/products/low-stock`); }
+
+  // reports
+  private toHttpParams(params: Record<string, any>): HttpParams {
+    let httpParams = new HttpParams();
+    Object.keys(params || {}).forEach(k => {
+      if (params[k] !== undefined && params[k] !== null && params[k] !== '') httpParams = httpParams.set(k, params[k]);
+    });
+    return httpParams;
+  }
+  runReport(type: string, params: Record<string, any> = {}): Observable<ReportResult> {
+    return this.http.get<ReportResult>(`${this.baseUrl}/reports/${type}`, { params: this.toHttpParams(params) });
+  }
+  exportReport(type: string, format: 'pdf' | 'xlsx' | 'csv', params: Record<string, any> = {}): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/reports/export`, {
+      params: this.toHttpParams({ ...params, type, format }),
+      responseType: 'blob',
+    });
+  }
+
+  // dashboard
+  getRevenueChart(months = 12): Observable<RevenueChartData> {
+    return this.http.get<RevenueChartData>(`${this.baseUrl}/dashboard/revenue-chart`, { params: this.toHttpParams({ months }) });
+  }
+  getInventoryValue(): Observable<InventoryValueSummary> {
+    return this.http.get<InventoryValueSummary>(`${this.baseUrl}/dashboard/inventory-value`);
+  }
+  getPendingOrdersCount(): Observable<PendingOrdersSummary> {
+    return this.http.get<PendingOrdersSummary>(`${this.baseUrl}/dashboard/pending-orders`);
+  }
+  getOverdueInvoices(limit = 5): Observable<OverdueInvoicesSummary> {
+    return this.http.get<OverdueInvoicesSummary>(`${this.baseUrl}/dashboard/overdue-invoices`, { params: this.toHttpParams({ limit }) });
+  }
+  getTopCustomers(limit = 5, months = 12): Observable<TopCustomerRow[]> {
+    return this.http.get<TopCustomerRow[]>(`${this.baseUrl}/dashboard/top-customers`, { params: this.toHttpParams({ limit, months }) });
+  }
+  getTopProducts(limit = 5, months = 12): Observable<TopProductRow[]> {
+    return this.http.get<TopProductRow[]>(`${this.baseUrl}/dashboard/top-products`, { params: this.toHttpParams({ limit, months }) });
+  }
 
   // customers
   findAllCustomer(page=1, limit=10): Observable<PagedResult<Customer>> {
@@ -139,6 +178,7 @@ export class ProductService {
   updateOrder(id: number, o: Order): Observable<Order> { return this.http.patch<Order>(`${this.baseUrl}/orders/update/${id}`, o); }
   deleteOrder(id: number): Observable<void> { return this.http.delete<void>(`${this.baseUrl}/orders/${id}`); }
   restoreOrder(id: number): Observable<Order> { return this.http.post<Order>(`${this.baseUrl}/orders/restore/${id}`, {}); }
+  transitionOrderStatus(id: number, status: string): Observable<any> { return this.http.patch<any>(`${this.baseUrl}/orders/${id}/status`, { status }); }
 
   // delivery
   findAllDelivery(page=1, limit=10): Observable<PagedResult<Delivery>> {
@@ -157,6 +197,41 @@ export class ProductService {
   updateDelivery(id: number, d: Delivery): Observable<Delivery> { return this.http.patch<Delivery>(`${this.baseUrl}/delivery/update/${id}`, d); }
   deleteDelivery(id: number): Observable<void> { return this.http.delete<void>(`${this.baseUrl}/delivery/${id}`); }
   restoreDelivery(id: number): Observable<Delivery> { return this.http.post<Delivery>(`${this.baseUrl}/delivery/restore/${id}`, {}); }
+  transitionDeliveryStatus(id: number, body: { status: string; tracking_number?: string; shipping_address?: string; carrier?: string }): Observable<any> {
+    return this.http.patch<any>(`${this.baseUrl}/delivery/${id}/status`, body);
+  }
+
+  // returns
+  findAllReturn(page=1, limit=10): Observable<PagedResult<Return>> {
+    return this.http.get<PagedResult<Return>>(`${this.baseUrl}/returns/?page=${page}&limit=${limit}`);
+  }
+  findReturnByKeyword(kw: string, page=1, limit=10): Observable<PagedResult<Return>> {
+    return this.http.get<PagedResult<Return>>(`${this.baseUrl}/returns/search?value=${kw}&page=${page}&limit=${limit}`);
+  }
+  findTrashReturn(page=1, limit=10): Observable<PagedResult<Return>> {
+    return this.http.get<PagedResult<Return>>(`${this.baseUrl}/returns/trash?page=${page}&limit=${limit}`);
+  }
+  createReturn(r: Partial<Return>): Observable<any> { return this.http.post<any>(`${this.baseUrl}/returns`, r); }
+  updateReturn(id: number, r: Partial<Return>): Observable<any> { return this.http.patch<any>(`${this.baseUrl}/returns/update/${id}`, r); }
+  deleteReturn(id: number): Observable<void> { return this.http.delete<void>(`${this.baseUrl}/returns/${id}`); }
+  restoreReturn(id: number): Observable<any> { return this.http.post<any>(`${this.baseUrl}/returns/restore/${id}`, {}); }
+  transitionReturnStatus(id: number, status: string): Observable<any> { return this.http.patch<any>(`${this.baseUrl}/returns/${id}/status`, { status }); }
+
+  // stock transfers
+  findAllStockTransfer(page=1, limit=10): Observable<PagedResult<StockTransfer>> {
+    return this.http.get<PagedResult<StockTransfer>>(`${this.baseUrl}/stock-transfers/?page=${page}&limit=${limit}`);
+  }
+  findStockTransferByKeyword(kw: string, page=1, limit=10): Observable<PagedResult<StockTransfer>> {
+    return this.http.get<PagedResult<StockTransfer>>(`${this.baseUrl}/stock-transfers/search?value=${kw}&page=${page}&limit=${limit}`);
+  }
+  findTrashStockTransfer(page=1, limit=10): Observable<PagedResult<StockTransfer>> {
+    return this.http.get<PagedResult<StockTransfer>>(`${this.baseUrl}/stock-transfers/trash?page=${page}&limit=${limit}`);
+  }
+  createStockTransfer(t: Partial<StockTransfer>): Observable<any> { return this.http.post<any>(`${this.baseUrl}/stock-transfers`, t); }
+  updateStockTransfer(id: number, t: Partial<StockTransfer>): Observable<any> { return this.http.patch<any>(`${this.baseUrl}/stock-transfers/update/${id}`, t); }
+  deleteStockTransfer(id: number): Observable<void> { return this.http.delete<void>(`${this.baseUrl}/stock-transfers/${id}`); }
+  restoreStockTransfer(id: number): Observable<any> { return this.http.post<any>(`${this.baseUrl}/stock-transfers/restore/${id}`, {}); }
+  transitionStockTransferStatus(id: number, status: string): Observable<any> { return this.http.patch<any>(`${this.baseUrl}/stock-transfers/${id}/status`, { status }); }
 
   // book (legacy)
   getAllBook(): Observable<Book[]> { return this.http.get<Book[]>(`${this.baseUrl}/book/`); }
@@ -196,5 +271,16 @@ export class ProductService {
   }
   emailInvoice(id: number): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.baseUrl}/invoices/${id}/email`, {});
+  }
+
+  // payments
+  findPaymentsByInvoice(invoiceId: number): Observable<Payment[]> {
+    return this.http.get<Payment[]>(`${this.baseUrl}/invoices/${invoiceId}/payments`);
+  }
+  addPayment(invoiceId: number, payment: Partial<Payment>): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/invoices/${invoiceId}/payments`, payment);
+  }
+  voidPayment(paymentId: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/invoices/payments/${paymentId}`);
   }
 }

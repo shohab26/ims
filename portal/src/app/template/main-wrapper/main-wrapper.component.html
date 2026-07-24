@@ -1,127 +1,141 @@
 <div class="dash-wrapper">
 
-  <!-- ── KPI Cards ── -->
-  <div class="section-title">Overview</div>
-  <div class="row g-3 mb-4">
+  <!-- ── Overview stat strip ── -->
+  <div class="stat-strip mb-4">
 
-    <div class="col-xl-3 col-md-6">
-      <div class="kpi-card kpi-blue">
-        <div class="kpi-icon"><i class="fas fa-shopping-cart"></i></div>
-        <div class="kpi-body">
-          <div class="kpi-label">Total Purchase</div>
-          <div class="kpi-value">{{totalSaleOrder | currency:'BDT ':'code':'1.0-0'}}</div>
-        </div>
-      </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Purchase</div>
+      <div class="stat-value">{{totalSaleOrder | currency:'BDT ':'code':'1.0-0'}}</div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
-      <div class="kpi-card kpi-green">
-        <div class="kpi-icon"><i class="fas fa-truck"></i></div>
-        <div class="kpi-body">
-          <div class="kpi-label">Total Sales</div>
-          <div class="kpi-value">{{totalSaleDelivery | currency:'BDT ':'code':'1.0-0'}}</div>
-        </div>
-      </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Sales</div>
+      <div class="stat-value">{{totalSaleDelivery | currency:'BDT ':'code':'1.0-0'}}</div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
-      <div class="kpi-card" [ngClass]="revenue >= 0 ? 'kpi-teal' : 'kpi-red'">
-        <div class="kpi-icon"><i class="fas fa-chart-line"></i></div>
-        <div class="kpi-body">
-          <div class="kpi-label">Revenue</div>
-          <div class="kpi-value">{{revenue}}<span class="kpi-unit">%</span></div>
-        </div>
-      </div>
+    <div class="stat-card">
+      <div class="stat-label">Revenue</div>
+      <div class="stat-value" [class.accent-red]="revenue < 0" [class.accent-green]="revenue >= 0">{{revenue}}<span class="stat-unit">%</span></div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
-      <div class="kpi-card kpi-purple">
-        <div class="kpi-icon"><i class="fas fa-boxes"></i></div>
-        <div class="kpi-body">
-          <div class="kpi-label">Products</div>
-          <div class="kpi-value">{{product.length}}</div>
-        </div>
-      </div>
+    <div class="stat-card">
+      <div class="stat-label">Inventory Value</div>
+      <div class="stat-value">{{inventoryValue?.totalValue | currency:'BDT ':'code':'1.0-0'}}</div>
+      <div class="stat-sub" *ngIf="inventoryValue">{{inventoryValue.totalProducts}} products &middot; {{inventoryValue.totalQty}} units</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Pending Orders</div>
+      <div class="stat-value">{{pendingOrdersCount}}</div>
+      <div class="stat-sub">Not yet fully received</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Overdue Invoices</div>
+      <div class="stat-value" [class.accent-red]="(overdueInvoices?.count ?? 0) > 0">{{overdueInvoices?.count ?? 0}}</div>
+      <div class="stat-sub" *ngIf="overdueInvoices">{{overdueInvoices.totalDue | currency:'BDT ':'code':'1.0-0'}} outstanding</div>
     </div>
 
   </div>
 
-  <!-- ── Summary Row ── -->
-  <div class="section-title">Quick Stats</div>
+  <!-- ── Alerts ── -->
+  <div class="section-title">Alerts</div>
   <div class="row g-3 mb-4">
-
-    <div class="col-md-4">
-      <div class="summary-card">
-        <div class="summary-icon bg-orange"><i class="fas fa-industry"></i></div>
-        <div>
-          <div class="summary-num">{{vendor.length}}</div>
-          <div class="summary-lbl">Vendors</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-4">
-      <div class="summary-card">
-        <div class="summary-icon bg-pink"><i class="fas fa-users"></i></div>
-        <div>
-          <div class="summary-num">{{customer.length}}</div>
-          <div class="summary-lbl">Customers</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-4">
-      <div class="summary-card">
-        <div class="summary-icon bg-navy"><i class="fas fa-exchange-alt"></i></div>
-        <div>
-          <div class="summary-num">{{order.length + delivery.length}}</div>
-          <div class="summary-lbl">Recent Transactions</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ── Charts ── -->
-  <div class="section-title">Analytics</div>
-  <div class="row g-3 mb-4">
-
-    <div class="col-lg-8">
-      <div class="dash-card p-3">
-        <div class="chart-title">Purchase vs Sales (BDT)</div>
-        <canvas baseChart [data]="barChartData" [options]="barChartOptions" type="bar" style="max-height:220px"></canvas>
-      </div>
-    </div>
-
-    <div class="col-lg-4">
-      <div class="dash-card p-3">
-        <div class="chart-title">Orders vs Deliveries</div>
-        <canvas baseChart [data]="doughnutData" [options]="doughnutOptions" type="doughnut" style="max-height:220px"></canvas>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ── Tables ── -->
-  <div class="section-title">Recent Activity</div>
-  <div class="row g-3">
 
     <div class="col-lg-6">
-      <div class="dash-card">
-        <div class="dash-card-header">
-          <span><i class="fas fa-shopping-cart mr-2"></i>Latest Purchase Orders</span>
-          <a routerLink="/inventory/order" class="dash-link">View All →</a>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><i class="fas fa-exclamation-triangle" style="color:#d97706"></i>Low Stock</span>
+          <a routerLink="/inventory/product" class="panel-link">Manage Products</a>
         </div>
         <div class="table-responsive">
           <table class="table dash-table">
             <thead>
               <tr>
-                <th>#</th><th>Product</th><th>Qty</th><th>Price</th><th>Vendor</th><th>Status</th>
+                <th>Code</th><th>Product</th><th>Stock</th><th>Reorder</th><th>Short</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let row of order; index as i">
-                <td>{{i+1}}</td>
+              <tr *ngFor="let row of lowStockItems">
+                <td><strong>{{row.pcode}}</strong></td>
+                <td>{{row.pname}}</td>
+                <td>{{row.stock_quantity}}</td>
+                <td>{{row.reorder_level}}</td>
+                <td class="accent-red">{{(row.reorder_level || 0) - (row.stock_quantity || 0)}}</td>
+              </tr>
+              <tr *ngIf="lowStockItems.length === 0">
+                <td colspan="5" class="text-center empty-state">
+                  <i class="fas fa-check-circle mb-1 d-block"></i>All products are above their reorder level
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><i class="fas fa-file-invoice-dollar" style="color:#dc2626"></i>Overdue Invoices</span>
+          <a routerLink="/inventory/invoice" class="panel-link">Manage Invoices</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table dash-table">
+            <thead>
+              <tr>
+                <th>Invoice #</th><th>Customer</th><th>Due</th><th class="text-right">Amount Due</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let inv of overdueInvoices?.invoices">
+                <td><strong>{{inv.invoice_number}}</strong></td>
+                <td>{{inv.customer_name}}</td>
+                <td class="accent-red">{{inv.due_date | date:'mediumDate'}}</td>
+                <td class="text-right">{{inv.due_amount | currency:'BDT ':'code':'1.0-0'}}</td>
+              </tr>
+              <tr *ngIf="!overdueInvoices?.invoices?.length">
+                <td colspan="4" class="text-center empty-state">
+                  <i class="fas fa-check-circle mb-1 d-block"></i>No overdue invoices
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Revenue trend ── -->
+  <div class="section-title">Revenue — Last 12 Months</div>
+  <div class="row g-3 mb-4">
+    <div class="col-12">
+      <div class="panel p-3">
+        <canvas baseChart [data]="revenueChartData" [options]="revenueChartOptions" type="line" style="max-height:240px"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Recent activity ── -->
+  <div class="section-title">Recent Activity</div>
+  <div class="row g-3 mb-4">
+
+    <div class="col-lg-6">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><i class="fas fa-shopping-cart"></i>Latest Purchase Orders</span>
+          <a routerLink="/inventory/order" class="panel-link">View All</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table dash-table">
+            <thead>
+              <tr>
+                <th>Product</th><th>Qty</th><th>Price</th><th>Vendor</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of order">
                 <td><strong>{{filterProductData(row.productid)}}</strong></td>
                 <td>{{row.quantity}}</td>
                 <td>{{row.unit_price | currency:'BDT ':'code':'1.0-0'}}</td>
@@ -136,35 +150,31 @@
                 </td>
               </tr>
               <tr *ngIf="order.length === 0">
-                <td colspan="6" class="text-center text-muted py-4">
-                  <i class="fas fa-inbox fa-2x mb-2 d-block" style="opacity:0.3"></i>No orders yet
+                <td colspan="5" class="text-center empty-state">
+                  <i class="fas fa-inbox mb-1 d-block"></i>No orders yet
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div class="dash-card-footer">
-          <a routerLink="/inventory/order" class="btn btn-sm btn-primary">+ New Order</a>
-        </div>
       </div>
     </div>
 
     <div class="col-lg-6">
-      <div class="dash-card">
-        <div class="dash-card-header">
-          <span><i class="fas fa-truck mr-2"></i>Latest Deliveries</span>
-          <a routerLink="/inventory/delivery" class="dash-link">View All →</a>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><i class="fas fa-truck"></i>Latest Deliveries</span>
+          <a routerLink="/inventory/delivery" class="panel-link">View All</a>
         </div>
         <div class="table-responsive">
           <table class="table dash-table">
             <thead>
               <tr>
-                <th>#</th><th>Product</th><th>Qty</th><th>Price</th><th>Customer</th><th>Status</th>
+                <th>Product</th><th>Qty</th><th>Price</th><th>Customer</th><th>Status</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let row of delivery; index as i">
-                <td>{{i+1}}</td>
+              <tr *ngFor="let row of delivery">
                 <td><strong>{{filterProductData(row.productid)}}</strong></td>
                 <td>{{row.quantity}}</td>
                 <td>{{row.unit_price | currency:'BDT ':'code':'1.0-0'}}</td>
@@ -179,15 +189,79 @@
                 </td>
               </tr>
               <tr *ngIf="delivery.length === 0">
-                <td colspan="6" class="text-center text-muted py-4">
-                  <i class="fas fa-inbox fa-2x mb-2 d-block" style="opacity:0.3"></i>No deliveries yet
+                <td colspan="5" class="text-center empty-state">
+                  <i class="fas fa-inbox mb-1 d-block"></i>No deliveries yet
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div class="dash-card-footer">
-          <a routerLink="/inventory/delivery" class="btn btn-sm btn-primary">+ New Delivery</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Top performers ── -->
+  <div class="section-title">Top Performers (Last 12 Months)</div>
+  <div class="row g-3">
+
+    <div class="col-lg-6">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><i class="fas fa-users"></i>Top 5 Customers</span>
+          <a routerLink="/inventory/customer" class="panel-link">View All</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table dash-table">
+            <thead>
+              <tr>
+                <th>Customer</th><th>Orders</th><th class="text-right">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let c of topCustomers">
+                <td><strong>{{c.customer_name}}</strong></td>
+                <td>{{c.order_count}}</td>
+                <td class="text-right">{{c.revenue | currency:'BDT ':'code':'1.0-0'}}</td>
+              </tr>
+              <tr *ngIf="topCustomers.length === 0">
+                <td colspan="3" class="text-center empty-state">
+                  <i class="fas fa-inbox mb-1 d-block"></i>No sales in this period
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title"><i class="fas fa-box"></i>Top 5 Products</span>
+          <a routerLink="/inventory/product" class="panel-link">View All</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table dash-table">
+            <thead>
+              <tr>
+                <th>Code</th><th>Product</th><th>Qty Sold</th><th class="text-right">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of topProducts">
+                <td>{{p.pcode}}</td>
+                <td><strong>{{p.pname}}</strong></td>
+                <td>{{p.qty_sold}}</td>
+                <td class="text-right">{{p.revenue | currency:'BDT ':'code':'1.0-0'}}</td>
+              </tr>
+              <tr *ngIf="topProducts.length === 0">
+                <td colspan="4" class="text-center empty-state">
+                  <i class="fas fa-inbox mb-1 d-block"></i>No sales in this period
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

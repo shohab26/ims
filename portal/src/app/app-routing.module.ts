@@ -14,6 +14,9 @@ import { CustomersComponent } from './components/customers/customers.component';
 import { StocksComponent } from './components/stocks/stocks.component';
 import { OrdersComponent } from './components/orders/orders.component';
 import { DeliveryComponent } from './components/delivery/delivery.component';
+import { ReturnsComponent } from './components/returns/returns.component';
+import { StockTransfersComponent } from './components/stock-transfers/stock-transfers.component';
+import { ReportsComponent } from './components/reports/reports.component';
 import { RolesComponent } from './components/roles/roles.component';
 import { UsersManagementComponent } from './components/users-management/users-management.component';
 import { InvoicesComponent } from './components/invoices/invoices.component';
@@ -36,9 +39,12 @@ const routes: Routes = [
       { path: 'customer',   component: CustomersComponent, canActivate: [permissionGuard], data: { module: 'customers' } },
       { path: 'product',    component: ProductsComponent, canActivate: [permissionGuard], data: { module: 'products' } },
       { path: 'stock',      component: StocksComponent, canActivate: [permissionGuard], data: { module: 'stocks' } },
+      { path: 'stock-transfers', component: StockTransfersComponent, canActivate: [permissionGuard], data: { module: 'stock_transfers' } },
       { path: 'order',      component: OrdersComponent, canActivate: [permissionGuard], data: { module: 'orders' } },
       { path: 'delivery',   component: DeliveryComponent, canActivate: [permissionGuard], data: { module: 'delivery' } },
+      { path: 'returns',    component: ReturnsComponent, canActivate: [permissionGuard], data: { module: 'returns' } },
       { path: 'invoice',    component: InvoicesComponent, canActivate: [permissionGuard], data: { module: 'invoices' } },
+      { path: 'reports',    component: ReportsComponent, canActivate: [permissionGuard], data: { module: 'reports' } },
       // Admin-only routes
       { path: 'roles',        component: RolesComponent,           canActivate: [roleGuard] },
       { path: 'users',        component: UsersManagementComponent, canActivate: [roleGuard] },

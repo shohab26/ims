@@ -48,6 +48,13 @@
           </a>
         </li>
 
+        <li class="nav-item" *ngIf="authService.hasPermission('stock_transfers', 'view')">
+          <a routerLink="/inventory/stock-transfers" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-exchange-alt"></i></span>
+            <p>Stock Transfers</p>
+          </a>
+        </li>
+
         <li class="nav-item" *ngIf="authService.hasPermission('categories', 'view')">
           <a routerLink="/inventory/category" routerLinkActive="active" class="nav-link custom-link">
             <span class="link-icon"><i class="fas fa-tags"></i></span>
@@ -78,10 +85,26 @@
           </a>
         </li>
 
+        <li class="nav-item" *ngIf="authService.hasPermission('returns', 'view')">
+          <a routerLink="/inventory/returns" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-undo"></i></span>
+            <p>Returns</p>
+          </a>
+        </li>
+
         <li class="nav-item" *ngIf="authService.hasPermission('invoices', 'view')">
           <a routerLink="/inventory/invoice" routerLinkActive="active" class="nav-link custom-link">
             <span class="link-icon"><i class="fas fa-file-invoice-dollar"></i></span>
             <p>Invoices</p>
+          </a>
+        </li>
+
+        <li class="nav-header custom-header"><span>REPORTS</span></li>
+
+        <li class="nav-item" *ngIf="authService.hasPermission('reports', 'view')">
+          <a routerLink="/inventory/reports" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-chart-bar"></i></span>
+            <p>Reports</p>
           </a>
         </li>
 

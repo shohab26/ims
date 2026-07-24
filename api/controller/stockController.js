@@ -1,6 +1,7 @@
 const pool = require('../connection');
 const { getPagination, paginate } = require('../utils/pagination');
 const { softDeleteById, restoreById } = require('../utils/softDelete');
+const { getTotalStock, checkLowStock } = require('../services/stockupdate');
 
 const findAll = async (req, res) => {
     const { page, limit, offset } = getPagination(req.query);
@@ -51,6 +52,7 @@ const findById = async (req, res) => {
 const save = async (req, res) => {
     const { quantity, productid, warehouseid } = req.body;
     try {
+        const beforeTotal = await getTotalStock(productid);
         const result = await pool.query(
             'INSERT INTO stocks(quantity,productid,warehouseid,updatedate,created_by) VALUES($1,$2,$3,$4,$5) RETURNING id',
             [quantity, productid, warehouseid, new Date(), req.user.id]);
@@ -58,12 +60,14 @@ const save = async (req, res) => {
             'INSERT INTO stock_movements(productid,warehouseid,change,reason,ref_type,ref_id,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)',
             [productid, warehouseid, parseFloat(quantity), 'adjustment', 'stocks', result.rows[0].id, req.user.id]);
         res.status(200).json({ message: 'stocks added sucessfully' });
+        checkLowStock(productid, beforeTotal, await getTotalStock(productid));
     } catch (err) { res.status(500).json(err); }
 };
 
 const updateById = async (req, res) => {
     const { quantity, productid, warehouseid } = req.body;
     try {
+        const beforeTotal = await getTotalStock(productid);
         const old = await pool.query('SELECT quantity, warehouseid FROM stocks WHERE id=$1', [req.params.id]);
         const result = await pool.query(
             'UPDATE stocks SET quantity=$1,productid=$2,warehouseid=$3,updatedate=$4,updated_by=$5 WHERE id=$6',
@@ -76,6 +80,7 @@ const updateById = async (req, res) => {
                 [productid, warehouseid, delta, 'adjustment', 'stocks', parseInt(req.params.id), req.user.id]);
         }
         res.status(200).json({ message: 'stocks updated sucessfully.' });
+        checkLowStock(productid, beforeTotal, await getTotalStock(productid));
     } catch (err) { res.status(500).json(err); }
 };
 

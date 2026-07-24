@@ -1,0 +1,94 @@
+<div class="page-section">
+
+    <div class="page-section-header">
+        <h4 class="card-title mb-0">Reports</h4>
+    </div>
+
+    <div class="row g-3 mt-2 mb-3">
+        <div class="col-md-3">
+            <label class="form-label">Report Type</label>
+            <select class="form-select" [(ngModel)]="reportType" (change)="onTypeChange()">
+                <option *ngFor="let r of reportTypes" [value]="r.value">{{r.label}}</option>
+            </select>
+        </div>
+
+        <div class="col-md-2" *ngIf="currentConfig.needsPeriod">
+            <label class="form-label">Period</label>
+            <select class="form-select" [(ngModel)]="period" (change)="runReport()">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+            </select>
+        </div>
+
+        <div class="col-md-2" *ngIf="currentConfig.needsRange">
+            <label class="form-label">From</label>
+            <input type="date" class="form-control" [(ngModel)]="from">
+        </div>
+        <div class="col-md-2" *ngIf="currentConfig.needsRange">
+            <label class="form-label">To</label>
+            <input type="date" class="form-control" [(ngModel)]="to">
+        </div>
+
+        <div class="col-md-2" *ngIf="currentConfig.needsLimit">
+            <label class="form-label">Top N</label>
+            <input type="number" min="1" max="100" class="form-control" [(ngModel)]="limit">
+        </div>
+
+        <div class="col-md-2" *ngIf="currentConfig.needsDays">
+            <label class="form-label">Days Threshold</label>
+            <input type="number" min="1" class="form-control" [(ngModel)]="days">
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+            <button class="btn btn-primary w-100" (click)="runReport()" [disabled]="loading">
+                <i class="fas fa-play mr-1"></i> Run Report
+            </button>
+        </div>
+    </div>
+
+    <div *ngIf="loading" class="text-center py-5">
+        <i class="fas fa-spinner fa-spin fa-2x muted"></i>
+    </div>
+
+    <div *ngIf="!loading && result">
+        <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+            <h5 class="mb-0">{{result.title}}</h5>
+            <div class="btn-group">
+                <button class="btn btn-outline-secondary btn-sm" (click)="exportReport('csv')" [disabled]="exporting !== null">
+                    <i class="fas fa-file-csv mr-1"></i>{{exporting === 'csv' ? 'Exporting…' : 'CSV'}}
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" (click)="exportReport('xlsx')" [disabled]="exporting !== null">
+                    <i class="fas fa-file-excel mr-1"></i>{{exporting === 'xlsx' ? 'Exporting…' : 'Excel'}}
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" (click)="exportReport('pdf')" [disabled]="exporting !== null">
+                    <i class="fas fa-file-pdf mr-1"></i>{{exporting === 'pdf' ? 'Exporting…' : 'PDF'}}
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped text-center">
+                <thead>
+                    <tr>
+                        <th scope="col" *ngFor="let c of result.columns">{{c.label}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let row of result.rows">
+                        <td *ngFor="let c of result.columns">{{row[c.key]}}</td>
+                    </tr>
+                    <tr *ngIf="!result.rows.length">
+                        <td [attr.colspan]="result.columns.length" class="text-center muted">No data for the selected range.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-3" *ngIf="result.summary?.length">
+            <div *ngFor="let line of result.summary" class="fw-bold">{{line}}</div>
+        </div>
+    </div>
+
+</div>

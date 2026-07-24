@@ -45,7 +45,7 @@
 
 /* Buttons */
 .inv-btn-primary {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: #4f46e5;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -56,9 +56,9 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  transition: opacity 0.2s, transform 0.15s;
+  transition: background 0.15s;
 }
-.inv-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.inv-btn-primary:hover { background: #4338ca; }
 
 .inv-btn-secondary {
   background: #f1f5f9;
@@ -74,7 +74,7 @@
 .inv-btn-secondary:hover { background: #e2e8f0; }
 
 .inv-btn-pdf {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: #dc2626;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -85,9 +85,9 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  transition: opacity 0.2s;
+  transition: background 0.15s;
 }
-.inv-btn-pdf:hover { opacity: 0.9; }
+.inv-btn-pdf:hover { background: #b91c1c; }
 
 /* Table */
 .inv-table-wrap { overflow-x: auto; }
@@ -183,7 +183,7 @@
 .inv-modal { border-radius: 16px; overflow: hidden; border: none; }
 
 .inv-modal-header {
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  background: #1a1a2e;
   padding: 20px 24px;
   border: none;
   display: flex;

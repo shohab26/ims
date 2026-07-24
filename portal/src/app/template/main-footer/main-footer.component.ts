@@ -9,5 +9,6 @@ import { faHeart} from '@fortawesome/free-solid-svg-icons';
 export class MainFooterComponent {
 
   hearticon = faHeart;
+  currentYear = new Date().getFullYear();
 
 }

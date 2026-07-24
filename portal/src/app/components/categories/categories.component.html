@@ -47,13 +47,13 @@
 
                             <div class="btn-group">
                                 <a class="btn" (click)="viewCategory(row)" data-toggle="modal" data-target="#exampleModal">
-                                    <fa-icon [icon]="faeye" style="color: #17a2b8;"></fa-icon></a>
+                                    <fa-icon [icon]="faeye" style="color: #6b7280;"></fa-icon></a>
                                 <a class="btn" (click)="onEditById(row)" data-toggle="modal" data-target="#exampleModal" *ngIf="authService.hasPermission('categories', 'update')">
-                                    <fa-icon [icon]="editicon" style="color: #5c34d5;"></fa-icon></a>
+                                    <fa-icon [icon]="editicon" style="color: #6366f1;"></fa-icon></a>
 
 
                                 <a class="btn" (click)="deleteCategory(row.id)" *ngIf="authService.hasPermission('categories', 'delete')">
-                                    <fa-icon [icon]="fatrash" style="color: #d53449;"></fa-icon></a>
+                                    <fa-icon [icon]="fatrash" style="color: #dc2626;"></fa-icon></a>
                             </div>
                         </td>
 
@@ -82,7 +82,7 @@
                         <td class="muted">{{row.deleted_at | date:'medium'}}</td>
                         <td>
                             <a class="btn" (click)="restoreCategory(row.id)" *ngIf="authService.isSuperAdmin()" title="Restore">
-                                <fa-icon [icon]="faTrashRestore" style="color: #28a745;"></fa-icon>
+                                <fa-icon [icon]="faTrashRestore" style="color: #059669;"></fa-icon>
                             </a>
                         </td>
                     </tr>

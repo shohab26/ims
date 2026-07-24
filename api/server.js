@@ -7,7 +7,10 @@ const server = http.createServer(app);
 
 server.listen(port, () => console.log(`API server running on port ${port}`));
 
+let shuttingDown = false;
 const shutdown = async () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
     console.log('Shutting down gracefully...');
     server.close();
     await pool.end();

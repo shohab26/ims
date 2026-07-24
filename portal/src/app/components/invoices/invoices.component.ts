@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { faPenToSquare, faTrash, faEye, faFilePdf, faPlus, faMinus, faTrashRestore, faList, faTrashAlt, faPaperPlane } from '@fortawesome/free-solid-svg-icons';
-import { Invoice, InvoiceItem, Customer, Product } from '../../model/inventory.model';
+import { Invoice, InvoiceItem, Customer, Product, Payment } from '../../model/inventory.model';
 import { ProductService } from '../../services/product.service';
 import { ToastService } from '../../services/toast.service';
 import { AuthService } from '../../services/auth.service';
@@ -22,7 +22,10 @@ export class InvoicesComponent implements OnInit {
   activeTab: 'active' | 'trash' = 'active';
   sendingEmailId: number | null = null;
 
+  payments: Payment[] = []; paymentForm!: FormGroup;
+
   readonly statuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
+  readonly paymentMethods = ['cash', 'card', 'bank_transfer', 'cheque', 'other'];
 
   constructor(public authService: AuthService, private svc: ProductService,
               private fb: FormBuilder, private toast: ToastService) {}
@@ -36,13 +39,26 @@ export class InvoicesComponent implements OnInit {
       notes:      [''],
       status:     ['draft']
     });
+    this.paymentForm = this.fb.group({
+      amount: ['', [Validators.required, Validators.min(0.01)]],
+      method: ['cash'],
+      transaction_id: [''],
+      paid_at: [new Date().toISOString().split('T')[0]],
+      note: ['']
+    });
     this.load();
     this.loadRefData();
   }
 
   loadRefData() {
-    this.svc.findAllCustomer(1, 200).subscribe({ next: r => this.customers = r.data, error: () => this.toast.show('Failed to load customers.', 'warning') });
-    this.svc.findAllProduct(1, 200).subscribe({ next: r => this.products = r.data, error: () => this.toast.show('Failed to load products.', 'warning') });
+    this.svc.findAllCustomer(1, 200).subscribe
+    ({ next: r => this.customers = r.data, 
+      error: () => this.toast.show
+      ('Failed to load customers.', 'warning') });
+    this.svc.findAllProduct(1, 200).subscribe
+    ({ next: r => this.products = r.data, 
+      error: () => this.toast.show
+      ('Failed to load products.', 'warning') });
   }
 
   load() {
@@ -89,7 +105,7 @@ export class InvoicesComponent implements OnInit {
   // ── CRUD ────────────────────────────────────────────────────
   openCreate() {
     this.menuType = false; this.viewOnly = false; this.invoiceModel = new Invoice();
-    this.lineItems = [new InvoiceItem()];
+    this.lineItems = [new InvoiceItem()]; this.payments = [];
     this.invoiceForm.reset({ discount: 0, tax_percent: 0, status: 'draft' });
     this.invoiceForm.enable();
     if (!this.customers.length || !this.products.length) this.loadRefData();
@@ -98,17 +114,21 @@ export class InvoicesComponent implements OnInit {
   viewInvoice(row: Invoice) {
     this.svc.findInvoiceById(row.id).subscribe({ next: inv => {
       this.menuType = false; this.viewOnly = true;
+      this.invoiceModel = inv;
       this.lineItems = inv.items || [];
+      this.payments = inv.payments || [];
       this.invoiceForm.patchValue({ customerid: inv.customerid, due_date: inv.due_date?.split('T')[0] || '',
         discount: inv.discount, tax_percent: inv.tax_percent, notes: inv.notes, status: inv.status });
       this.invoiceForm.disable();
+      this.paymentForm.reset({ method: 'cash', paid_at: new Date().toISOString().split('T')[0] });
     }});
   }
 
   onEditById(row: Invoice) {
     this.svc.findInvoiceById(row.id).subscribe({ next: inv => {
-      this.menuType = false; this.viewOnly = false; this.invoiceModel.id = inv.id;
+      this.menuType = false; this.viewOnly = false; this.invoiceModel = inv;
       this.lineItems = inv.items || [];
+      this.payments = inv.payments || [];
       this.invoiceForm.patchValue({ customerid: inv.customerid, due_date: inv.due_date?.split('T')[0] || '',
         discount: inv.discount, tax_percent: inv.tax_percent, notes: inv.notes, status: inv.status });
       this.invoiceForm.enable();
@@ -168,5 +188,39 @@ export class InvoicesComponent implements OnInit {
 
   getCustomerName(id: any) { return this.customers.find(c => c.id == id)?.customer_name || '—'; }
   statusClass(s: string) { return { draft:'badge-secondary', sent:'badge-primary', paid:'badge-success', overdue:'badge-danger', cancelled:'badge-dark' }[s] || 'badge-secondary'; }
-  backToList() { this.menuType = true; this.invoiceForm.reset({ discount: 0, tax_percent: 0, status: 'draft' }); this.lineItems = []; }
+  backToList() { this.menuType = true; this.invoiceForm.reset({ discount: 0, tax_percent: 0, status: 'draft' }); this.lineItems = []; this.payments = []; }
+
+  // ── Payments ────────────────────────────────────────────────
+  get totalPaid() { return this.payments.reduce((s, p) => s + (+p.amount || 0), 0); }
+  get amountDue() { return Math.max(this.grandTotal - this.totalPaid, 0); }
+
+  recordPayment() {
+    if (this.paymentForm.invalid || !this.invoiceModel.id) return;
+    this.svc.addPayment(this.invoiceModel.id, this.paymentForm.value).subscribe({
+      next: () => {
+        this.toast.show('Payment recorded.', 'success');
+        this.paymentForm.reset({ method: 'cash', paid_at: new Date().toISOString().split('T')[0] });
+        this.refreshPayments();
+        this.load();
+      },
+      error: (err) => this.toast.show(err?.error?.message || 'Failed to record payment.', 'error')
+    });
+  }
+
+  voidPayment(payment: Payment) {
+    if (!confirm(`Void payment of $${payment.amount}?`)) return;
+    this.svc.voidPayment(payment.id).subscribe({
+      next: () => { this.toast.show('Payment voided.', 'warning'); this.refreshPayments(); this.load(); },
+      error: (err) => this.toast.show(err?.error?.message || 'Failed to void payment.', 'error')
+    });
+  }
+
+  refreshPayments() {
+    if (!this.invoiceModel.id) return;
+    this.svc.findInvoiceById(this.invoiceModel.id).subscribe({ next: inv => {
+      this.payments = inv.payments || [];
+      this.invoiceForm.patchValue({ status: inv.status }, { emitEvent: false });
+      this.invoiceModel.status = inv.status;
+    }});
+  }
 }

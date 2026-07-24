@@ -27,6 +27,8 @@ router.get('/', productController.findAll);
 router.get('/search', productController.findByKeyword);
 // trash listing (soft-deleted rows)
 router.get('/trash', productController.findDeleted);
+// low-stock alert widget (products where stock_quantity < reorder_level)
+router.get('/low-stock', productController.findLowStock);
 // get request for single object
 router.get('/:id', productController.findById);
 // post request

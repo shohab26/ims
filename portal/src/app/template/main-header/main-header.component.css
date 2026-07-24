@@ -51,13 +51,12 @@
 .user-avatar {
   width: 34px; height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e94560, #c2185b);
+  background: #e94560;
   color: #fff;
   font-size: 0.875rem;
   font-weight: 700;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(233,69,96,0.35);
 }
 
 /* ── User meta text ── */
@@ -74,9 +73,9 @@
 
 /* ── Dropdown menu ── */
 .user-dropdown-menu {
-  border: none !important;
+  border: 1px solid #edeef1 !important;
   border-radius: 14px !important;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.14) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.1) !important;
   padding: 0 !important;
   min-width: 240px;
   overflow: hidden;
@@ -87,12 +86,12 @@
 .dropdown-user-header {
   display: flex; align-items: center; gap: 14px;
   padding: 16px 18px;
-  background: linear-gradient(135deg, #1a1a2e, #0f3460);
+  background: #1a1a2e;
 }
 .duh-avatar {
   width: 44px; height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e94560, #c2185b);
+  background: #e94560;
   color: #fff; font-size: 1.1rem; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
@@ -108,7 +107,7 @@
   color: rgba(255,255,255,0.8);
   text-transform: uppercase; letter-spacing: 0.5px;
 }
-.duh-badge-admin { background: rgba(233,69,96,0.35); color: #fca5a5; }
+.duh-badge-admin { background: rgba(233,69,96,0.3); color: #fca5a5; }
 
 /* ── Dropdown items ── */
 .dropdown-divider { margin: 0 !important; border-color: #f1f5f9; }

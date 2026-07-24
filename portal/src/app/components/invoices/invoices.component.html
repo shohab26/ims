@@ -60,6 +60,8 @@
               <th>Issue Date</th>
               <th>Due Date</th>
               <th class="text-right">Total</th>
+              <th class="text-right">Paid</th>
+              <th class="text-right">Due</th>
               <th class="text-center">Status</th>
               <th>Created By</th>
               <th class="text-center">Actions</th>
@@ -73,6 +75,8 @@
               <td class="muted">{{ inv.issue_date | date:'dd MMM yyyy' }}</td>
               <td class="muted">{{ inv.due_date | date:'dd MMM yyyy' }}</td>
               <td class="text-right amount">${{ inv.total | number:'1.2-2' }}</td>
+              <td class="text-right amount">${{ inv.paid_amount | number:'1.2-2' }}</td>
+              <td class="text-right amount">${{ inv.due_amount | number:'1.2-2' }}</td>
               <td class="text-center">
                 <span class="inv-badge" [ngClass]="statusClass(inv.status)">{{ inv.status }}</span>
               </td>
@@ -109,7 +113,7 @@
               </td>
             </tr>
             <tr *ngIf="!invoices.length">
-              <td colspan="8" class="text-center empty-state">
+              <td colspan="10" class="text-center empty-state">
                 <i class="fas fa-file-invoice fa-2x mb-2 d-block muted"></i>
                 No invoices found
               </td>
@@ -289,10 +293,87 @@
                     <span>Total</span>
                     <span>${{ grandTotal | number:'1.2-2' }}</span>
                   </div>
+                  <div class="inv-total-row" *ngIf="invoiceModel.id">
+                    <span>Paid</span>
+                    <span>${{ totalPaid | number:'1.2-2' }}</span>
+                  </div>
+                  <div class="inv-total-row" *ngIf="invoiceModel.id">
+                    <span>Due</span>
+                    <span>${{ amountDue | number:'1.2-2' }}</span>
+                  </div>
                 </div>
               </div>
 
             </form>
+
+            <!-- payments -->
+            <div *ngIf="invoiceModel.id">
+              <div class="inv-section-label">Payments</div>
+              <div class="inv-items-wrap">
+                <table class="inv-items-table">
+                  <thead>
+                    <tr>
+                      <th>Paid At</th>
+                      <th>Method</th>
+                      <th>Transaction ID</th>
+                      <th class="text-right">Amount</th>
+                      <th>Note</th>
+                      <th>Recorded By</th>
+                      <th style="width:5%"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let p of payments">
+                      <td>{{ p.paid_at | date:'dd MMM yyyy' }}</td>
+                      <td>{{ p.method }}</td>
+                      <td>{{ p.transaction_id || '-' }}</td>
+                      <td class="text-right">${{ p.amount | number:'1.2-2' }}</td>
+                      <td>{{ p.note || '-' }}</td>
+                      <td>{{ p.created_by_name || '-' }}</td>
+                      <td class="text-center">
+                        <button class="rm-line" title="Void payment" (click)="voidPayment(p)"
+                                *ngIf="authService.hasPermission('invoices','update')">
+                          <fa-icon [icon]="faTrash"></fa-icon>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr *ngIf="!payments.length">
+                      <td colspan="7" class="text-center empty-state">No payments recorded.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <form [formGroup]="paymentForm" *ngIf="authService.hasPermission('invoices','update')" class="inv-form-grid mt-2">
+                <div class="inv-field">
+                  <label>Amount <span class="req">*</span></label>
+                  <input type="number" min="0.01" step="0.01" formControlName="amount" class="inv-input">
+                </div>
+                <div class="inv-field">
+                  <label>Method</label>
+                  <select formControlName="method" class="inv-select">
+                    <option *ngFor="let m of paymentMethods" [value]="m">{{ m }}</option>
+                  </select>
+                </div>
+                <div class="inv-field">
+                  <label>Transaction ID</label>
+                  <input type="text" formControlName="transaction_id" class="inv-input">
+                </div>
+                <div class="inv-field">
+                  <label>Paid At</label>
+                  <input type="date" formControlName="paid_at" class="inv-input">
+                </div>
+                <div class="inv-field" style="grid-column: span 2;">
+                  <label>Note</label>
+                  <input type="text" formControlName="note" class="inv-input">
+                </div>
+                <div class="inv-field" style="align-self:end;">
+                  <button type="button" class="inv-btn-primary" [disabled]="paymentForm.invalid" (click)="recordPayment()">
+                    Record Payment
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
 
           <!-- modal footer -->

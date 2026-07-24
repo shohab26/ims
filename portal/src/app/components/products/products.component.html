@@ -33,6 +33,7 @@
                         <th scope="col">Product Name</th>
                         <th scope="col">Category</th>
                         <th scope="col">Price</th>
+                        <th scope="col">Reorder Level</th>
                         <th scope="col">Create Date</th>
                         <th scope="col">Created By</th>
                         <th scope="col">Action</th>
@@ -49,19 +50,23 @@
 
                         </td>
                         <td>{{row.price}}</td>
+                        <td>
+                            <span *ngIf="row.reorder_level" [class.text-danger]="(row.stock_quantity ?? 0) < row.reorder_level">{{row.reorder_level}}</span>
+                            <span *ngIf="!row.reorder_level" class="muted">-</span>
+                        </td>
                         <td>{{row.createdate | date:'medium'}}</td>
                         <td>{{row.created_by_name || '-'}}</td>
                         <td>
 
                             <div class="btn-group">
                                 <a class="btn" (click)="viewProduct(row)" data-toggle="modal" data-target="#exampleModal">
-                                    <fa-icon [icon]="faeye" style="color: #17a2b8;"></fa-icon></a>
+                                    <fa-icon [icon]="faeye" style="color: #6b7280;"></fa-icon></a>
                                 <a class="btn" (click)="onEditById(row)" data-toggle="modal" data-target="#exampleModal" *ngIf="authService.hasPermission('products', 'update')">
-                                    <fa-icon [icon]="editicon" style="color: #5c34d5;"></fa-icon></a>
+                                    <fa-icon [icon]="editicon" style="color: #6366f1;"></fa-icon></a>
 
 
                                 <a class="btn" (click)="deleteProduct(row.id)" *ngIf="authService.hasPermission('products', 'delete')">
-                                    <fa-icon [icon]="fatrash" style="color: #d53449;"></fa-icon></a>
+                                    <fa-icon [icon]="fatrash" style="color: #dc2626;"></fa-icon></a>
                             </div>
                         </td>
 
@@ -94,7 +99,7 @@
                         <td class="muted">{{row.deleted_at | date:'medium'}}</td>
                         <td>
                             <a class="btn" (click)="restoreProduct(row.id)" *ngIf="authService.isSuperAdmin()" title="Restore">
-                                <fa-icon [icon]="faTrashRestore" style="color: #28a745;"></fa-icon>
+                                <fa-icon [icon]="faTrashRestore" style="color: #059669;"></fa-icon>
                             </a>
                         </td>
                     </tr>
@@ -155,6 +160,25 @@
                                 <label class="form-label">Price</label>
                                 <input type="text" class="form-control" formControlName="price">
                             </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Reorder Level</label>
+                                <input type="number" min="0" class="form-control" formControlName="reorder_level">
+                            </div>
+
+                            <ng-container *ngIf="menuType">
+                                <div class="col-md-12"><hr class="my-1"><small class="text-muted">Optional: seed initial stock for this product</small></div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Initial Warehouse</label>
+                                    <select class="form-select" formControlName="warehouseid">
+                                        <option value="">— None —</option>
+                                        <option *ngFor="let w of warehouse" [value]="w.id">{{w.wname}}</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Initial Quantity</label>
+                                    <input type="number" min="0" class="form-control" formControlName="initial_quantity" placeholder="0">
+                                </div>
+                            </ng-container>
 
                         </div>
 

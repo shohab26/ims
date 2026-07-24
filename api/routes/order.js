@@ -9,7 +9,7 @@ const router = express.Router();
 const orderController = require('../controller/orderController');
 
 const validateOrder = [
-    validateRequired(['quantity', 'productid', 'unit_price']),
+    validateRequired(['quantity', 'productid', 'unit_price', 'warehouseid']),
     validateNumericRanges({ quantity: { min: 0 }, unit_price: { min: 0 }, total_price: { min: 0 } }),
 ];
 
@@ -32,6 +32,8 @@ router.post('/', validateOrder, orderController.save);
 
 // put or patch request
 router.patch('/update/:id', validateOrder, orderController.updateById);
+// status transition (state machine)
+router.patch('/:id/status', orderController.transitionStatus);
 // delete request (soft delete)
 router.delete('/:id',orderController.deleteById);
 // restore request

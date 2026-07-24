@@ -1,7 +1,7 @@
 import { AuthService } from '../../services/auth.service';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { faPenToSquare, faTrash, faEye, faTrashRestore, faList, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
-import { Category, Product } from '../../model/inventory.model';
+import { Category, Product, Warehouse } from '../../model/inventory.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
 import { ToastService } from '../../services/toast.service';
@@ -11,7 +11,7 @@ export class ProductsComponent implements OnInit {
   @ViewChild('closeModal') closeModal!: ElementRef;
   title = 'Products List'; title2 = 'Product Entry Form'; menuType = true;
   fatrash = faTrash; editicon = faPenToSquare; faeye = faEye; faTrashRestore = faTrashRestore; faList = faList; faTrashAlt = faTrashAlt;
-  product: Product[] = []; cate: Category[] = []; productForm!: FormGroup; productModel: Product = new Product();
+  product: Product[] = []; cate: Category[] = []; warehouse: Warehouse[] = []; productForm!: FormGroup; productModel: Product = new Product();
   searchKeyword = ''; page = 1; totalPages = 1;
   viewOnly = false;
   activeTab: 'active' | 'trash' = 'active';
@@ -19,9 +19,15 @@ export class ProductsComponent implements OnInit {
   constructor(public authService: AuthService, private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
 
   ngOnInit() {
-    this.productForm = this.fb.group({ pname: ['', Validators.required], pcode: ['', Validators.required], pcate: ['', Validators.required], price: ['', Validators.required], createdate: [''] });
+    this.productForm = this.fb.group({
+      pname: ['', Validators.required], pcode: ['', Validators.required], pcate: ['', Validators.required],
+      price: ['', Validators.required], reorder_level: [0],
+      warehouseid: [''], initial_quantity: [''],
+      createdate: ['']
+    });
     this.load();
     this.service.findAllCategory(1, 100).subscribe({ next: r => this.cate = r.data, error: e => console.log(e) });
+    this.service.findAllWarehouse(1, 200).subscribe({ next: r => this.warehouse = r.data, error: e => console.log(e) });
   }
 
   load() {
@@ -58,7 +64,7 @@ export class ProductsComponent implements OnInit {
   viewProduct(row: any) {
     this.menuType = false;
     this.viewOnly = true;
-    this.productForm.patchValue({ pname: row.pname, pcode: row.pcode, pcate: row.pcate, price: row.price });
+    this.productForm.patchValue({ pname: row.pname, pcode: row.pcode, pcate: row.pcate, price: row.price, reorder_level: row.reorder_level, warehouseid: '', initial_quantity: '' });
     this.productForm.disable();
   }
 
@@ -74,7 +80,7 @@ export class ProductsComponent implements OnInit {
     this.viewOnly = false;
     this.productForm.enable();
     this.productModel.id = row.id;
-    this.productForm.patchValue({ pname: row.pname, pcode: row.pcode, pcate: row.pcate, price: row.price });
+    this.productForm.patchValue({ pname: row.pname, pcode: row.pcode, pcate: row.pcate, price: row.price, reorder_level: row.reorder_level, warehouseid: '', initial_quantity: '' });
   }
 
   editProduct() {

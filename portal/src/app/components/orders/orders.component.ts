@@ -1,7 +1,7 @@
 import { AuthService } from '../../services/auth.service';
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { faPenToSquare, faTrash, faEye, faTrashRestore, faList, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
-import { Order, Product, Status, Vendor } from '../../model/inventory.model';
+import { Order, Product, Status, Vendor, Warehouse, PoStatus, PO_TRANSITIONS } from '../../model/inventory.model';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
 import { ToastService } from '../../services/toast.service';
@@ -11,7 +11,7 @@ export class OrdersComponent implements OnInit {
   @ViewChild('closeModal') closeModal!: ElementRef;
   title = 'Orders List'; title2 = 'Order Entry Form'; menuType = true;
   fatrash = faTrash; editicon = faPenToSquare; faeye = faEye; faTrashRestore = faTrashRestore; faList = faList; faTrashAlt = faTrashAlt;
-  order: Order[] = []; product: Product[] = []; vendor: Vendor[] = []; status: Status[] = [];
+  order: Order[] = []; product: Product[] = []; vendor: Vendor[] = []; status: Status[] = []; warehouse: Warehouse[] = [];
   orderForm!: FormGroup; orderModel: Order = new Order();
   searchKeyword = ''; page = 1; totalPages = 1;
   viewOnly = false;
@@ -20,7 +20,7 @@ export class OrdersComponent implements OnInit {
   constructor(public authService: AuthService, private service: ProductService, private fb: FormBuilder, private toast: ToastService) {}
 
   ngOnInit() {
-    this.orderForm = this.fb.group({ quantity: ['', Validators.required], productid: ['', Validators.required], statusid: ['', Validators.required], unit_price: ['', Validators.required], total_price: ['', Validators.required], vendorid: ['', Validators.required], createdate: [''] });
+    this.orderForm = this.fb.group({ quantity: ['', Validators.required], productid: ['', Validators.required], unit_price: ['', Validators.required], total_price: ['', Validators.required], vendorid: ['', Validators.required], warehouseid: ['', Validators.required], createdate: [''] });
     this.load();
     this.loadRefData();
   }
@@ -29,6 +29,7 @@ export class OrdersComponent implements OnInit {
     this.service.findAllProduct(1, 200).subscribe({ next: r => this.product = r.data, error: () => this.toast.show('Failed to load products.', 'warning') });
     this.service.findAllStatus(1, 200).subscribe({ next: r => this.status = r.data, error: () => this.toast.show('Failed to load statuses.', 'warning') });
     this.service.findAllVendor(1, 200).subscribe({ next: r => this.vendor = r.data, error: () => this.toast.show('Failed to load vendors.', 'warning') });
+    this.service.findAllWarehouse(1, 200).subscribe({ next: r => this.warehouse = r.data, error: () => this.toast.show('Failed to load warehouses.', 'warning') });
   }
 
   load() {
@@ -66,13 +67,14 @@ export class OrdersComponent implements OnInit {
     this.menuType = true; this.viewOnly = false;
     this.orderModel = new Order();
     this.orderForm.reset(); this.orderForm.enable();
-    if (!this.product.length || !this.vendor.length || !this.status.length) this.loadRefData();
+    if (!this.product.length || !this.vendor.length || !this.status.length || !this.warehouse.length) this.loadRefData();
   }
 
   viewOrder(row: any) {
     this.menuType = false;
     this.viewOnly = true;
-    this.orderForm.patchValue({ quantity: row.quantity, productid: row.productid, statusid: row.statusid, unit_price: row.unit_price, total_price: row.total_price, vendorid: row.vendorid });
+    this.orderModel = row;
+    this.orderForm.patchValue({ quantity: row.quantity, productid: row.productid, unit_price: row.unit_price, total_price: row.total_price, vendorid: row.vendorid, warehouseid: row.warehouseid });
     this.orderForm.disable();
   }
 
@@ -87,9 +89,9 @@ export class OrdersComponent implements OnInit {
     this.menuType = false;
     this.viewOnly = false;
     this.orderForm.enable();
-    this.orderModel.id = row.id;
-    this.orderForm.patchValue({ quantity: row.quantity, productid: row.productid, statusid: row.statusid, unit_price: row.unit_price, total_price: row.total_price, vendorid: row.vendorid });
-    if (!this.product.length || !this.vendor.length || !this.status.length) this.loadRefData();
+    this.orderModel = { ...row };
+    this.orderForm.patchValue({ quantity: row.quantity, productid: row.productid, unit_price: row.unit_price, total_price: row.total_price, vendorid: row.vendorid, warehouseid: row.warehouseid });
+    if (!this.product.length || !this.vendor.length || !this.warehouse.length) this.loadRefData();
   }
 
   editOrder() {
@@ -104,6 +106,32 @@ export class OrdersComponent implements OnInit {
   filterProductData(id: any) { const p = this.product.find(x => x.id == id); return p ? p.pcode : ''; }
   filterVendorData(id: any) { const v = this.vendor.find(x => x.id == id); return v ? v.company : ''; }
   filterStatusData(id: any) { const s = this.status.find(x => x.id == id); return s ? s.status : ''; }
+  filterWarehouseData(id: any) { const w = this.warehouse.find(x => x.id == id); return w ? w.wname : ''; }
   updateUnitPrice() { const p = this.product.find(x => x.id == this.orderForm.value.productid); if (p) this.orderForm.controls['unit_price'].setValue(p.price); }
   calculate() { this.orderForm.controls['total_price'].setValue(this.orderForm.value.quantity * this.orderForm.value.unit_price); }
+
+  getNextStatuses(current: PoStatus): PoStatus[] { return PO_TRANSITIONS[current] || []; }
+
+  changeStatus(orderId: number, newStatus: PoStatus) {
+    this.service.transitionOrderStatus(orderId, newStatus).subscribe({
+      next: () => { this.toast.show(`Status changed to '${newStatus}'.`, 'success'); this.load(); },
+      error: (err) => this.toast.show(err?.error?.message || 'Status change failed.', 'error')
+    });
+  }
+
+  statusBadgeClass(status: PoStatus): string {
+    const map: Record<PoStatus, string> = {
+      draft: 'badge bg-secondary', sent: 'badge bg-primary',
+      partial: 'badge bg-warning text-dark', received: 'badge bg-success', cancelled: 'badge bg-danger'
+    };
+    return map[status] || 'badge bg-secondary';
+  }
+
+  statusBtnClass(status: PoStatus): string {
+    const map: Record<PoStatus, string> = {
+      draft: 'btn btn-sm btn-secondary', sent: 'btn btn-sm btn-primary',
+      partial: 'btn btn-sm btn-warning', received: 'btn btn-sm btn-success', cancelled: 'btn btn-sm btn-danger'
+    };
+    return map[status] || 'btn btn-sm btn-secondary';
+  }
 }

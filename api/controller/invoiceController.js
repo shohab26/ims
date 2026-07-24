@@ -13,16 +13,50 @@ const itemsOf = async (invoiceid) => {
     return r.rows;
 };
 
+const paymentsOf = async (invoiceid) => {
+    const r = await pool.query(
+        `SELECT p.*, u.full_name AS created_by_name FROM payments p
+         LEFT JOIN users u ON u.id = p.created_by
+         WHERE p.invoice_id = $1 AND p.is_deleted = FALSE ORDER BY p.paid_at DESC, p.id DESC`, [invoiceid]);
+    return r.rows;
+};
+
+// Recomputes paid total for an invoice and flips status to 'paid' once
+// payments cover the total. Never overrides a 'cancelled' invoice, and
+// steps a fully-paid invoice back to 'sent' if a payment is later voided.
+const syncInvoiceStatus = async (client, invoiceid) => {
+    const inv = await client.query('SELECT total, status FROM invoices WHERE id=$1', [invoiceid]);
+    if (!inv.rows.length) return;
+    const { total, status } = inv.rows[0];
+    if (status === 'cancelled') return;
+
+    const paidRes = await client.query(
+        `SELECT COALESCE(SUM(amount),0) AS paid FROM payments WHERE invoice_id=$1 AND is_deleted=FALSE`, [invoiceid]);
+    const paid = parseFloat(paidRes.rows[0].paid);
+
+    if (paid >= parseFloat(total) && status !== 'paid') {
+        await client.query('UPDATE invoices SET status=$1 WHERE id=$2', ['paid', invoiceid]);
+    } else if (paid < parseFloat(total) && status === 'paid') {
+        await client.query('UPDATE invoices SET status=$1 WHERE id=$2', ['sent', invoiceid]);
+    }
+};
+
 // ── CRUD ─────────────────────────────────────────────────────────
 const findAll = async (req, res) => {
     const { page, limit, offset } = getPagination(req.query);
     try {
         const [data, count] = await Promise.all([
-            pool.query(`SELECT i.*, c.customer_name, u1.full_name AS created_by_name, u2.full_name AS updated_by_name
+            pool.query(`SELECT i.*, c.customer_name, u1.full_name AS created_by_name, u2.full_name AS updated_by_name,
+                                COALESCE(p.paid_amount, 0) AS paid_amount,
+                                i.total - COALESCE(p.paid_amount, 0) AS due_amount
                         FROM invoices i
                         JOIN customers c ON c.id = i.customerid
                         LEFT JOIN users u1 ON u1.id = i.created_by
                         LEFT JOIN users u2 ON u2.id = i.updated_by
+                        LEFT JOIN (
+                            SELECT invoice_id, SUM(amount) AS paid_amount
+                            FROM payments WHERE is_deleted = FALSE GROUP BY invoice_id
+                        ) p ON p.invoice_id = i.id
                         WHERE i.is_deleted = FALSE
                         ORDER BY i.id DESC LIMIT $1 OFFSET $2`, [limit, offset]),
             pool.query('SELECT COUNT(*) FROM invoices WHERE is_deleted = FALSE')
@@ -73,7 +107,10 @@ const findById = async (req, res) => {
              WHERE i.id = $1`, [req.params.id]);
         if (!inv.rows.length) return res.status(404).json({ message: 'Not found.' });
         const items = await itemsOf(req.params.id);
-        res.json({ ...inv.rows[0], items });
+        const payments = await paymentsOf(req.params.id);
+        const paid_amount = payments.reduce((s, p) => s + parseFloat(p.amount), 0);
+        const due_amount = parseFloat(inv.rows[0].total) - paid_amount;
+        res.json({ ...inv.rows[0], items, payments, paid_amount, due_amount });
     } catch (err) { res.status(500).json(err); }
 };
 
@@ -367,4 +404,53 @@ const emailInvoice = async (req, res) => {
     }
 };
 
-module.exports = { findAll, findByKeyword, findById, save, updateById, deleteById, restoreById, findDeleted, downloadPDF, emailInvoice };
+// ── Payments ──────────────────────────────────────────────────────
+const findPayments = async (req, res) => {
+    try {
+        const inv = await pool.query('SELECT id FROM invoices WHERE id=$1 AND is_deleted=FALSE', [req.params.id]);
+        if (!inv.rows.length) return res.status(404).json({ message: 'Invoice not found.' });
+        res.json(await paymentsOf(req.params.id));
+    } catch (err) { res.status(500).json(err); }
+};
+
+const addPayment = async (req, res) => {
+    const { amount, method, transaction_id, paid_at, note } = req.body;
+    if (!amount || parseFloat(amount) <= 0) return res.status(400).json({ message: 'Amount must be greater than zero.' });
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const inv = await client.query('SELECT id FROM invoices WHERE id=$1 AND is_deleted=FALSE', [req.params.id]);
+        if (!inv.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Invoice not found.' }); }
+
+        const result = await client.query(
+            `INSERT INTO payments(invoice_id,amount,method,transaction_id,paid_at,note,created_by)
+             VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+            [req.params.id, amount, method || null, transaction_id || null, paid_at || new Date(), note || null, req.user.id]);
+
+        await syncInvoiceStatus(client, req.params.id);
+        await client.query('COMMIT');
+        res.status(201).json({ message: 'Payment recorded.', id: result.rows[0].id });
+    } catch (err) { await client.query('ROLLBACK'); res.status(500).json(err); }
+    finally { client.release(); }
+};
+
+const voidPayment = async (req, res) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const pay = await client.query('SELECT invoice_id FROM payments WHERE id=$1 AND is_deleted=FALSE', [req.params.paymentId]);
+        if (!pay.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Payment not found.' }); }
+
+        await client.query(
+            'UPDATE payments SET is_deleted=TRUE, deleted_at=NOW(), deleted_by=$2 WHERE id=$1',
+            [req.params.paymentId, req.user.id]);
+
+        await syncInvoiceStatus(client, pay.rows[0].invoice_id);
+        await client.query('COMMIT');
+        res.json({ message: 'Payment voided.' });
+    } catch (err) { await client.query('ROLLBACK'); res.status(500).json(err); }
+    finally { client.release(); }
+};
+
+module.exports = { findAll, findByKeyword, findById, save, updateById, deleteById, restoreById, findDeleted, downloadPDF, emailInvoice, findPayments, addPayment, voidPayment };

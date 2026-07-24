@@ -24,6 +24,9 @@ import { CustomersComponent } from './components/customers/customers.component';
 import { StocksComponent } from './components/stocks/stocks.component';
 import { OrdersComponent } from './components/orders/orders.component';
 import { DeliveryComponent } from './components/delivery/delivery.component';
+import { ReturnsComponent } from './components/returns/returns.component';
+import { StockTransfersComponent } from './components/stock-transfers/stock-transfers.component';
+import { ReportsComponent } from './components/reports/reports.component';
 import { ToastComponent } from './components/toast/toast.component';
 import { RolesComponent } from './components/roles/roles.component';
 import { UsersManagementComponent } from './components/users-management/users-management.component';
@@ -54,6 +57,9 @@ import { NgChartsModule } from 'ng2-charts';
     StocksComponent,
     OrdersComponent,
     DeliveryComponent,
+    ReturnsComponent,
+    StockTransfersComponent,
+    ReportsComponent,
     ToastComponent,
     RolesComponent,
     UsersManagementComponent,

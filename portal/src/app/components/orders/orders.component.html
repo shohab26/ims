@@ -33,11 +33,12 @@
                         <th scope="col">Quantity</th>
                         <th scope="col">Unit Price</th>
                         <th scope="col">Vendor</th>
+                        <th scope="col">Warehouse</th>
                         <th scope="col">Create Date</th>
                         <th scope="col">Status</th>
                         <th scope="col">Created By</th>
+                        <th scope="col">Transition</th>
                         <th scope="col">Action</th>
-
                     </tr>
                 </thead>
                 <tbody>
@@ -50,25 +51,27 @@
                         <td>
                             {{filterVendorData(row.vendorid)}}
                         </td>
+                        <td>{{row.warehouse_name || filterWarehouseData(row.warehouseid)}}</td>
                         <td>{{row.createdate | date:'short'}}</td>
-                        <td [ngClass]="{'badge ':true,
-                                 'bg-danger': row.statusid == 1
-                                                ,'bg-primary': row.statusid == 2,
-                                                'bg-success': row.statusid == 3,
-                                                'bg-warning': row.statusid == 4,
-                                                }">
-                            {{filterStatusData(row.statusid)}}
+                        <td>
+                            <span [class]="statusBadgeClass(row.po_status)">{{row.po_status}}</span>
                         </td>
                         <td>{{row.created_by_name || '-'}}</td>
                         <td>
+                            <span *ngFor="let s of getNextStatuses(row.po_status)" class="mr-1">
+                                <button [class]="statusBtnClass(s)" (click)="changeStatus(row.id, s)"
+                                    *ngIf="authService.hasPermission('orders', 'update')">{{s}}</button>
+                            </span>
+                        </td>
+                        <td>
                             <div class="btn-group">
                                 <a class="btn" (click)="viewOrder(row)" data-toggle="modal" data-target="#exampleModal">
-                                    <fa-icon [icon]="faeye" style="color: #17a2b8;"></fa-icon></a>
-                                <a class="btn" (click)="onEditById(row)" data-toggle="modal" data-target="#exampleModal" *ngIf="authService.hasPermission('orders', 'update')">
-                                    <fa-icon [icon]="editicon" style="color: #5c34d5;"></fa-icon></a>
-
+                                    <fa-icon [icon]="faeye" style="color: #6b7280;"></fa-icon></a>
+                                <a class="btn" (click)="onEditById(row)" data-toggle="modal" data-target="#exampleModal"
+                                    *ngIf="authService.hasPermission('orders', 'update') && row.po_status === 'draft'">
+                                    <fa-icon [icon]="editicon" style="color: #6366f1;"></fa-icon></a>
                                 <a class="btn" (click)="deleteOrder(row.id)" *ngIf="authService.hasPermission('orders', 'delete')">
-                                    <fa-icon [icon]="fatrash" style="color: #d53449;"></fa-icon></a>
+                                    <fa-icon [icon]="fatrash" style="color: #dc2626;"></fa-icon></a>
                             </div>
                         </td>
 
@@ -87,6 +90,7 @@
                         <th scope="col">Quantity</th>
                         <th scope="col">Unit Price</th>
                         <th scope="col">Vendor</th>
+                        <th scope="col">Warehouse</th>
                         <th scope="col">Create Date</th>
                         <th scope="col">Status</th>
                         <th scope="col">Deleted At</th>
@@ -100,17 +104,18 @@
                         <td>{{row.quantity}}</td>
                         <td>{{row.unit_price}}</td>
                         <td>{{filterVendorData(row.vendorid)}}</td>
+                        <td>{{filterWarehouseData(row.warehouseid)}}</td>
                         <td>{{row.createdate | date:'short'}}</td>
-                        <td>{{filterStatusData(row.statusid)}}</td>
+                        <td><span [class]="statusBadgeClass(row.po_status)">{{row.po_status}}</span></td>
                         <td class="muted">{{row.deleted_at | date:'medium'}}</td>
                         <td>
                             <a class="btn" (click)="restoreOrder(row.id)" *ngIf="authService.isSuperAdmin()" title="Restore">
-                                <fa-icon [icon]="faTrashRestore" style="color: #28a745;"></fa-icon>
+                                <fa-icon [icon]="faTrashRestore" style="color: #059669;"></fa-icon>
                             </a>
                         </td>
                     </tr>
                     <tr *ngIf="!order.length">
-                        <td colspan="9" class="text-center muted">No items in trash.</td>
+                        <td colspan="10" class="text-center muted">No items in trash.</td>
                     </tr>
                 </tbody>
             </table>
@@ -161,6 +166,15 @@
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
+                                <label class="form-label">Warehouse (Receiving)</label>
+                                <select id="warehouseId" class="form-select" formControlName="warehouseid">
+                                    <option value="">Select warehouse</option>
+                                    <option *ngFor="let data of warehouse" [value]="data.id">
+                                        {{data.wname}}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
                                 <label class="form-label">Quantiy</label>
                                 <input type="text" class="form-control" [readOnly]="menuType == false"
                                 formControlName="quantity">
@@ -176,13 +190,12 @@
                                 (click)="calculate()"
                                 formControlName="total_price">
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-6 mb-3" *ngIf="!menuType">
                                 <label class="form-label">Status</label>
-                                <select id="statusId" class="form-select" formControlName="statusid">
-                                    <option *ngFor="let data of status" [value]="data.id">
-                                        {{data.status}}
-                                    </option>
-                                </select>
+                                <div><span [class]="statusBadgeClass(orderModel.po_status)" style="font-size: 1rem; padding: 6px 14px;">{{orderModel.po_status}}</span></div>
+                                <small class="text-muted" *ngIf="orderModel.status_changed_by_name">
+                                    Changed by {{orderModel.status_changed_by_name}} on {{orderModel.status_changed_at | date:'medium'}}
+                                </small>
                             </div>
 
                         </div>
