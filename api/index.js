@@ -23,6 +23,8 @@ const stockTransferRoute = require('./routes/stock_transfers');
 const reportsRoute = require('./routes/reports');
 const dashboardRoute = require('./routes/dashboard');
 const invoiceRoute      = require('./routes/invoices');
+const forecastRoute     = require('./routes/forecast');
+const aiRoute           = require('./routes/ai');
 const activityLogRoute      = require('./routes/activity_logs');
 const stockMovementRoute    = require('./routes/stock_movements');
 
@@ -56,5 +58,9 @@ app.use('/dashboard', verifyToken, checkPermission('dashboard'), dashboardRoute)
 app.use('/invoices',        verifyToken, checkPermission('invoices'), invoiceRoute);
 app.use('/activity-logs',   verifyToken, requireSuperAdmin, activityLogRoute);
 app.use('/stock-movements', verifyToken, checkPermission('stocks'), stockMovementRoute);
+// AI demand forecasting — reads sales history, so gate on dashboard view access
+app.use('/forecast',        verifyToken, checkPermission('dashboard'), forecastRoute);
+// AI chat assistant — any authenticated user
+app.use('/ai',              verifyToken, aiRoute);
 
 module.exports = app;

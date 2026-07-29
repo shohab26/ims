@@ -21,6 +21,7 @@ import { RolesComponent } from './components/roles/roles.component';
 import { UsersManagementComponent } from './components/users-management/users-management.component';
 import { InvoicesComponent } from './components/invoices/invoices.component';
 import { ActivityLogsComponent } from './components/activity-logs/activity-logs.component';
+import { AiAssistantComponent } from './components/ai-assistant/ai-assistant.component';
 import { authGuard } from './guards/auth.guard';
 import { roleGuard } from './guards/role.guard';
 import { permissionGuard } from './guards/permission.guard';
@@ -45,6 +46,7 @@ const routes: Routes = [
       { path: 'returns',    component: ReturnsComponent, canActivate: [permissionGuard], data: { module: 'returns' } },
       { path: 'invoice',    component: InvoicesComponent, canActivate: [permissionGuard], data: { module: 'invoices' } },
       { path: 'reports',    component: ReportsComponent, canActivate: [permissionGuard], data: { module: 'reports' } },
+      { path: 'assistant',  component: AiAssistantComponent },
       // Admin-only routes
       { path: 'roles',        component: RolesComponent,           canActivate: [roleGuard] },
       { path: 'users',        component: UsersManagementComponent, canActivate: [roleGuard] },

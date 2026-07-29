@@ -32,6 +32,15 @@
           </a>
         </li>
 
+        <li class="nav-header custom-header"><span>AI</span></li>
+
+        <li class="nav-item">
+          <a routerLink="/inventory/assistant" routerLinkActive="active" class="nav-link custom-link">
+            <span class="link-icon"><i class="fas fa-robot"></i></span>
+            <p>AI Assistant</p>
+          </a>
+        </li>
+
         <li class="nav-header custom-header"><span>INVENTORY</span></li>
 
         <li class="nav-item" *ngIf="authService.hasPermission('products', 'view')">

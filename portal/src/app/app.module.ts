@@ -32,6 +32,7 @@ import { RolesComponent } from './components/roles/roles.component';
 import { UsersManagementComponent } from './components/users-management/users-management.component';
 import { InvoicesComponent } from './components/invoices/invoices.component';
 import { ActivityLogsComponent } from './components/activity-logs/activity-logs.component';
+import { AiAssistantComponent } from './components/ai-assistant/ai-assistant.component';
 import { authInterceptor } from './interceptors/auth.interceptor';
 
 import { NgChartsModule } from 'ng2-charts';
@@ -65,6 +66,7 @@ import { NgChartsModule } from 'ng2-charts';
     UsersManagementComponent,
     InvoicesComponent,
     ActivityLogsComponent,
+    AiAssistantComponent,
   ],
   imports: [
     BrowserModule,
