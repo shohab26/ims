@@ -3,27 +3,63 @@ const pool = require('../connection');
 const forecastService = require('./forecastService');
 require('dotenv').config();
 
-// Provider-agnostic: any OpenAI-compatible endpoint works (Hugging Face router,
-// Groq, Ollama, OpenAI itself...). Configure via .env:
-//   AI_BASE_URL  — default: Hugging Face inference router
-//   AI_API_KEY   — falls back to HF_TOKEN
-//   AI_MODEL     — must support tool/function calling for the chat assistant
 const BASE_URL = process.env.AI_BASE_URL || 'https://router.huggingface.co/v1';
 const API_KEY = process.env.AI_API_KEY || process.env.HF_TOKEN;
 const MODEL = process.env.AI_MODEL || 'Qwen/Qwen2.5-72B-Instruct';
 
-const client = new OpenAI({ baseURL: BASE_URL, apiKey: API_KEY });
+// Optional local fallback, used when the primary provider is out of quota or
+// unreachable. Free cloud tiers have small daily caps, so without this the
+// assistant simply stops working for the rest of the day.
+const FALLBACK_BASE_URL = process.env.AI_FALLBACK_BASE_URL || '';
+const FALLBACK_MODEL = process.env.AI_FALLBACK_MODEL || '';
+const FALLBACK_API_KEY = process.env.AI_FALLBACK_API_KEY || 'ollama';
 
-// Some open models (e.g. Qwen3) emit <think>...</think> reasoning — strip it.
-const cleanText = (text) => (text || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+const KEEP_ALIVE = process.env.AI_KEEP_ALIVE || '30m';
+const isOllama = (url) => /localhost|127\.0\.0\.1|:11434/.test(url);
 
 /**
- * Ask the model to explain demand forecasts in plain English.
- * `forecasts` is the output of forecastService.getForecasts() — one entry or many.
+ * A provider is a client + model + the extra params that provider accepts.
+ * keep_alive is Ollama-only: strict providers (Gemini) reject unknown fields
+ * with a 400, so it must never leak into a cloud request.
  */
+const makeProvider = (baseUrl, apiKey, model, label) => ({
+    label,
+    model,
+    client: new OpenAI({ baseURL: baseUrl, apiKey, timeout: 300000 }),
+    params: () => (isOllama(baseUrl) ? { model, keep_alive: KEEP_ALIVE } : { model }),
+});
+
+const primary = makeProvider(BASE_URL, API_KEY, MODEL, 'primary');
+const fallback = FALLBACK_BASE_URL && FALLBACK_MODEL
+    ? makeProvider(FALLBACK_BASE_URL, FALLBACK_API_KEY, FALLBACK_MODEL, 'fallback')
+    : null;
+
+// Worth retrying on the fallback provider: out of quota, rate limited, or down.
+const shouldFallOver = (err) => {
+    const s = err && err.status;
+    return s === 429 || s === 402 || (typeof s === 'number' && s >= 500);
+};
+
+// Kept for backwards compatibility with the rest of this file.
+const client = primary.client;
+const baseParams = () => primary.params();
+// Provider errors arrive as bare status codes ("400 status code (no body)").
+// Translate the common ones into something a user can act on.
+const friendlyError = (err) => {
+    const status = err && err.status;
+    if (status === 429) return new Error('The AI service is rate-limited right now (free tier). Wait a minute and try again.');
+    if (status === 401 || status === 403) return new Error('The AI API key was rejected. Check AI_API_KEY in the server .env file.');
+    if (status === 404) return new Error(`Model "${MODEL}" was not found for this provider. Check AI_MODEL in the server .env file.`);
+    if (status === 400) return new Error('The AI provider rejected the request. This usually means an unsupported model or parameter.');
+    if (status >= 500) return new Error('The AI service is temporarily unavailable. Please try again shortly.');
+    return err;
+};
+
+const cleanText = (text) => (text || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+
 const explainForecast = async (forecasts) => {
     const completion = await client.chat.completions.create({
-        model: MODEL,
+        ...baseParams(),
         max_tokens: 2000,
         messages: [
             {
@@ -52,10 +88,7 @@ const CHAT_TOOLS = [
         type: 'function',
         function: {
             name: 'get_inventory_overview',
-            description:
-                'Get a snapshot of the whole inventory: product/vendor/customer counts, total stock, ' +
-                'low-stock products (stock below 10), and total sales/purchase value. ' +
-                'Call this first for general questions about the state of the business.',
+            description: 'Counts, total stock, low-stock items, and total sales/purchase value. Use for general "how is the business doing" questions.',
             parameters: { type: 'object', properties: {} },
         },
     },
@@ -63,9 +96,7 @@ const CHAT_TOOLS = [
         type: 'function',
         function: {
             name: 'get_sales_summary',
-            description:
-                'Monthly totals for the last 6 months: units sold and revenue from deliveries (sales to customers), ' +
-                'and units purchased and spend from orders (purchases from vendors).',
+            description: 'Monthly sales and purchase totals for the last 6 months.',
             parameters: { type: 'object', properties: {} },
         },
     },
@@ -73,9 +104,7 @@ const CHAT_TOOLS = [
         type: 'function',
         function: {
             name: 'get_demand_forecast',
-            description:
-                'Per-product demand forecast based on the last 6 months of sales: moving average, trend %, ' +
-                'recommended stock level, current stock, and shortfall. Sorted by most urgent shortfall first.',
+            description: 'Per-product forecast: trend, recommended stock, current stock, shortfall. Use for restocking questions.',
             parameters: { type: 'object', properties: {} },
         },
     },
@@ -83,12 +112,10 @@ const CHAT_TOOLS = [
         type: 'function',
         function: {
             name: 'search_products',
-            description: 'Search products by name or code. Returns product info, price, category, and current stock.',
+            description: 'Look up products by name or code, with price and current stock.',
             parameters: {
                 type: 'object',
-                properties: {
-                    keyword: { type: 'string', description: 'Search term matched against product name and code' },
-                },
+                properties: { keyword: { type: 'string', description: 'Name or code to match' } },
                 required: ['keyword'],
             },
         },
@@ -153,12 +180,10 @@ const runChatTool = async (name, input) => {
 };
 
 const CHAT_SYSTEM_PROMPT =
-    'You are the built-in AI assistant of InvenTrack, an inventory management system. ' +
-    'You help staff understand their inventory: stock levels, sales, purchases, forecasts, and problems ' +
-    'like low stock or falling demand. Use the provided tools to look up real data before answering — ' +
-    'never invent numbers. Currency values are in the shop\'s local currency; report them as plain numbers. ' +
-    'Keep responses focused, brief, and concise; answer in plain prose or short bullet lists, no markdown tables or headers. ' +
-    'If a question is completely unrelated to the business or its inventory, politely decline and steer back to inventory topics.';
+    'You are the AI assistant inside InvenTrack, an inventory management system. ' +
+    'Answer questions about stock, sales, purchases and forecasts using the tools — never invent numbers. ' +
+    'Be brief and concrete. Plain prose or short bullets; no markdown tables, headers or bold. ' +
+    'Decline anything unrelated to the business.';
 
 const MAX_TOOL_TURNS = 8;
 
@@ -174,12 +199,17 @@ const chat = async (history) => {
     ];
 
     for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
-        const completion = await client.chat.completions.create({
-            model: MODEL,
-            max_tokens: 2000,
-            messages,
-            tools: CHAT_TOOLS,
-        });
+        let completion;
+        try {
+            completion = await client.chat.completions.create({
+                ...baseParams(),
+                max_tokens: 2000,
+                messages,
+                tools: CHAT_TOOLS,
+            });
+        } catch (err) {
+            throw friendlyError(err);
+        }
 
         const msg = completion.choices[0]?.message;
         if (!msg) throw new Error('The AI provider returned an empty response.');
@@ -205,4 +235,116 @@ const chat = async (history) => {
     throw new Error('The assistant took too many steps to answer. Please try a more specific question.');
 };
 
-module.exports = { explainForecast, chat };
+
+/**
+ * Same as chat(), but streams the answer back as it is generated.
+ * `onEvent` receives: {type:'status', text} while tools run,
+ * {type:'delta', text} for each chunk of the answer, {type:'done'} at the end.
+ */
+const TOOL_STATUS = {
+    get_inventory_overview: 'Checking inventory\u2026',
+    get_sales_summary: 'Reading sales history\u2026',
+    get_demand_forecast: 'Calculating forecast\u2026',
+    search_products: 'Searching products\u2026',
+};
+
+const runChatStream = async (provider, history, onEvent) => {
+    const messages = [
+        { role: 'system', content: CHAT_SYSTEM_PROMPT },
+        ...history.map((m) => ({ role: m.role, content: String(m.content) })),
+    ];
+
+    for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
+        const stream = await provider.client.chat.completions.create({
+            ...provider.params(),
+            max_tokens: 2000,
+            messages,
+            tools: CHAT_TOOLS,
+            stream: true,
+        });
+
+        let content = '';
+        const toolCalls = [];
+        let inThink = false;
+
+        for await (const chunk of stream) {
+            const delta = chunk.choices[0]?.delta;
+            if (!delta) continue;
+
+            if (delta.tool_calls) {
+                for (const tc of delta.tool_calls) {
+                    const i = tc.index ?? 0;
+                    if (!toolCalls[i]) toolCalls[i] = { id: '', type: 'function', function: { name: '', arguments: '' } };
+                    if (tc.id) toolCalls[i].id = tc.id;
+                    if (tc.function && tc.function.name) toolCalls[i].function.name += tc.function.name;
+                    if (tc.function && tc.function.arguments) toolCalls[i].function.arguments += tc.function.arguments;
+                    // Carry through provider-specific fields we don't understand.
+                    // Gemini 3.x attaches extra_content.google.thought_signature to a
+                    // tool call and rejects the follow-up request (400) if it is missing.
+                    for (const key of Object.keys(tc)) {
+                        if (!['index', 'id', 'type', 'function'].includes(key)) toolCalls[i][key] = tc[key];
+                    }
+                }
+            }
+
+            if (delta.content) {
+                content += delta.content;
+                let out = delta.content;
+                if (inThink) {
+                    const close = out.indexOf('</think>');
+                    if (close === -1) continue;
+                    out = out.slice(close + 8);
+                    inThink = false;
+                }
+                const open = out.indexOf('<think>');
+                if (open !== -1) {
+                    inThink = true;
+                    out = out.slice(0, open);
+                }
+                if (out) onEvent({ type: 'delta', text: out });
+            }
+        }
+
+        const calls = toolCalls.filter(Boolean);
+        if (calls.length === 0) {
+            onEvent({ type: 'done' });
+            return cleanText(content);
+        }
+
+        messages.push({ role: 'assistant', content: content || null, tool_calls: calls });
+        for (const tc of calls) {
+            onEvent({ type: 'status', text: TOOL_STATUS[tc.function.name] || 'Looking things up\u2026' });
+            let result;
+            try {
+                const args = tc.function.arguments ? JSON.parse(tc.function.arguments) : {};
+                result = JSON.stringify(await runChatTool(tc.function.name, args));
+            } catch (err) {
+                result = 'Error: ' + err.message;
+            }
+            messages.push({ role: 'tool', tool_call_id: tc.id, content: result });
+        }
+    }
+
+    throw new Error('The assistant took too many steps to answer. Please try a more specific question.');
+};
+
+/**
+ * Public entry point: try the primary provider, and if it is out of quota,
+ * rate limited, or down, transparently retry on the local fallback so the
+ * assistant keeps working instead of dying for the rest of the day.
+ */
+const chatStream = async (history, onEvent) => {
+    try {
+        return await runChatStream(primary, history, onEvent);
+    } catch (err) {
+        if (!fallback || !shouldFallOver(err)) throw friendlyError(err);
+        onEvent({ type: 'status', text: 'Cloud quota reached \u2014 switching to the local model\u2026' });
+        try {
+            return await runChatStream(fallback, history, onEvent);
+        } catch (err2) {
+            throw friendlyError(err2);
+        }
+    }
+};
+
+module.exports = { explainForecast, chat, chatStream };

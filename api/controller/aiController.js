@@ -31,4 +31,42 @@ const chat = async (req, res) => {
     }
 };
 
-module.exports = { chat };
+
+/**
+ * POST /ai/chat/stream
+ * Same body as /ai/chat, but replies as Server-Sent Events so the UI can
+ * render the answer while the model is still writing it.
+ */
+const chatStream = async (req, res) => {
+    const { messages } = req.body || {};
+    if (!Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ message: 'messages must be a non-empty array.' });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // don't let a proxy buffer the stream
+    res.flushHeaders();
+
+    const send = (event) => res.write(`data: ${JSON.stringify(event)}\n\n`);
+
+    let closed = false;
+    res.on('close', () => { closed = true; });
+
+    // Emit immediately so the UI shows activity instead of an empty pane
+    // while the model works through its first (slow) prefill.
+    send({ type: 'status', text: 'Thinking\u2026' });
+
+    try {
+        await aiService.chatStream(messages.slice(-MAX_HISTORY), (event) => {
+            if (!closed) send(event);
+        });
+    } catch (err) {
+        if (!closed) send({ type: 'error', message: err.message || 'AI assistant failed to respond.' });
+    } finally {
+        if (!closed) res.end();
+    }
+};
+
+module.exports = { chat, chatStream };

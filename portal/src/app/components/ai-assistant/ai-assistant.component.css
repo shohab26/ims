@@ -128,3 +128,22 @@
   height: 38px;
   width: 46px;
 }
+
+/* streaming caret + status line */
+.caret {
+  display: inline-block;
+  width: 7px;
+  height: 1em;
+  background: #4a5fc1;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: caret-blink 1s step-end infinite;
+}
+@keyframes caret-blink { 50% { opacity: 0; } }
+.status-line {
+  display: inline-flex;
+  align-items: center;
+  color: #6c757d;
+  font-size: 0.88rem;
+}
+.status-line .dot { margin-right: 4px; }
